@@ -1,0 +1,570 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>iMessage Blaster</title>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+            background: #ffffff;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+        }
+        
+        #root { min-height: 100vh; }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 18px;
+            color: #86868b;
+            font-weight: 400;
+        }
+        
+        ::-webkit-scrollbar { width: 8px; }
+        ::-webkit-scrollbar-track { background: transparent; }
+        ::-webkit-scrollbar-thumb { background: #d2d2d7; border-radius: 10px; }
+        ::-webkit-scrollbar-thumb:hover { background: #86868b; }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(10px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { animation: fadeIn 0.4s ease-out forwards; }
+        
+        .stat-card {
+          animation: fadeIn 0.5s ease-out forwards;
+        }
+
+        .stat-card:nth-child(2) { animation-delay: 0.05s; opacity: 0; }
+        .stat-card:nth-child(3) { animation-delay: 0.1s; opacity: 0; }
+        .stat-card:nth-child(4) { animation-delay: 0.15s; opacity: 0; }
+        .stat-card:nth-child(5) { animation-delay: 0.2s; opacity: 0; }
+        
+        input, textarea, select {
+          transition: all 0.2s ease;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+        }
+        
+        input:focus, textarea:focus, select:focus {
+          outline: none;
+          border-color: #0071e3;
+          box-shadow: 0 0 0 4px rgba(0, 113, 227, 0.1);
+        }
+
+        button {
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+          transition: all 0.2s ease;
+        }
+
+        button:hover:not(:disabled) {
+          transform: translateY(-1px);
+        }
+
+        button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .contact-row, .batch-row { 
+          transition: all 0.15s ease;
+        }
+        
+        .contact-row:hover, .batch-row:hover {
+          background: #f5f5f7 !important;
+        }
+
+        .glass-card {
+          background: rgba(255, 255, 255, 0.8);
+          backdrop-filter: blur(20px);
+          -webkit-backdrop-filter: blur(20px);
+          border: 1px solid rgba(0, 0, 0, 0.04);
+          box-shadow: 0 4px 16px rgba(0, 0, 0, 0.08);
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading">Loading...</div>
+    </div>
+    
+    <script>
+        const SUPABASE_URL = 'https://kbewkabvddddabqkozsy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZXdrYWJ2ZGRkZGFicWtvenN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0MTAzNTYsImV4cCI6MjA4Mjk4NjM1Nn0.pMIsBE9VNIiu0gf5f9ktyEXqGuieLYl_r-kyRs0POvg';
+        
+        const { useState, useEffect } = React;
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const h = React.createElement;
+
+        function App() {
+          const [activeTab, setActiveTab] = useState('composer');
+          const [contacts, setContacts] = useState([]);
+          const [messageTemplate, setMessageTemplate] = useState('');
+          const [selectedContacts, setSelectedContacts] = useState([]);
+          const [batches, setBatches] = useState([]);
+          const [platform, setPlatform] = useState('imessage');
+          const [sending, setSending] = useState(false);
+          const [stats, setStats] = useState({
+            totalBatches: 0, completed: 0, sending: 0, failed: 0, cancelled: 0
+          });
+
+          useEffect(() => {
+            fetchContacts();
+            fetchBatches();
+            fetchStats();
+          }, []);
+
+          const fetchContacts = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('contacts').select('*').order('created_at', { ascending: false });
+              if (!error && data) setContacts(data);
+            } catch (err) { console.error('Error:', err); }
+          };
+
+          const fetchBatches = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('message_batches').select('*').order('created_at', { ascending: false });
+              if (!error && data) setBatches(data);
+            } catch (err) { console.error('Error:', err); }
+          };
+
+          const fetchStats = async () => {
+            try {
+              const { data, error } = await supabaseClient.from('message_batches').select('status');
+              if (!error && data) {
+                setStats({
+                  totalBatches: data.length,
+                  completed: data.filter(b => b.status === 'completed').length,
+                  sending: data.filter(b => b.status === 'sending').length,
+                  failed: data.filter(b => b.status === 'failed').length,
+                  cancelled: data.filter(b => b.status === 'cancelled').length
+                });
+              }
+            } catch (err) { console.error('Error:', err); }
+          };
+
+          const handleCSVUpload = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const lines = text.split('\n');
+              const headers = lines[0].split(',').map(h => h.trim());
+              const newContacts = [];
+              
+              for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = lines[i].split(',').map(v => v.trim());
+                const contact = {};
+                headers.forEach((header, index) => { contact[header] = values[index]; });
+                
+                if (contact.phone) {
+                  newContacts.push({
+                    phone: contact.phone,
+                    first_name: contact.first_name || '',
+                    last_name: contact.last_name || '',
+                    metadata: contact
+                  });
+                }
+              }
+
+              const { error } = await supabaseClient.from('contacts').insert(newContacts);
+              if (!error) {
+                fetchContacts();
+                alert(`Successfully imported ${newContacts.length} contacts`);
+              } else {
+                alert('Error importing contacts: ' + error.message);
+              }
+            } catch (err) {
+              alert('Error reading file: ' + err.message);
+            }
+          };
+
+          const handleSendBlast = async () => {
+            if (!messageTemplate || selectedContacts.length === 0) {
+              alert('Please enter a message and select contacts');
+              return;
+            }
+
+            setSending(true);
+            try {
+              const { data: batch, error: batchError } = await supabaseClient
+                .from('message_batches')
+                .insert({
+                  platform: platform,
+                  message_template: messageTemplate,
+                  total_messages: selectedContacts.length,
+                  status: 'pending'
+                }).select().single();
+
+              if (batchError) throw batchError;
+
+              const messages = selectedContacts.map(contact => ({
+                batch_id: batch.id,
+                contact_id: contact.id,
+                phone_number: contact.phone,
+                message: personalizeMessage(messageTemplate, contact),
+                status: 'queued'
+              }));
+
+              const { error: messagesError } = await supabaseClient.from('messages').insert(messages);
+              if (messagesError) throw messagesError;
+
+              await supabaseClient.from('message_batches').update({ status: 'sending' }).eq('id', batch.id);
+
+              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
+                batchId: batch.id,
+                supabaseUrl: SUPABASE_URL,
+                supabaseKey: SUPABASE_ANON_KEY
+              }))}`;
+
+              window.location.href = shortcutUrl;
+              fetchBatches();
+              fetchStats();
+              setActiveTab('delivery');
+              
+              setTimeout(() => {
+                alert('Batch created! Opening Shortcuts app...');
+              }, 500);
+            } catch (err) {
+              alert('Error: ' + err.message);
+            } finally {
+              setSending(false);
+            }
+          };
+
+          const personalizeMessage = (template, contact) => {
+            let message = template;
+            message = message.replace(/\{\{first_name\}\}/g, contact.first_name || '');
+            message = message.replace(/\{\{last_name\}\}/g, contact.last_name || '');
+            message = message.replace(/\{\{phone\}\}/g, contact.phone || '');
+            if (contact.metadata) {
+              Object.keys(contact.metadata).forEach(key => {
+                message = message.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contact.metadata[key] || '');
+              });
+            }
+            return message;
+          };
+
+          const toggleContact = (contact) => {
+            setSelectedContacts(prev => {
+              const exists = prev.find(c => c.id === contact.id);
+              return exists ? prev.filter(c => c.id !== contact.id) : [...prev, contact];
+            });
+          };
+
+          const selectAll = () => {
+            setSelectedContacts(prev => prev.length === contacts.length ? [] : [...contacts]);
+          };
+
+          return h('div', { style: { minHeight: '100vh', background: '#fbfbfd' }},
+            h('div', { style: { maxWidth: '980px', margin: '0 auto', padding: '60px 22px' }},
+              // Header
+              h('div', { style: { marginBottom: '60px', animation: 'fadeIn 0.6s ease-out' }},
+                h('div', { style: { display: 'flex', alignItems: 'center', gap: '16px', marginBottom: '12px' }},
+                  h('div', { 
+                    style: { 
+                      width: '56px', 
+                      height: '56px', 
+                      borderRadius: '16px', 
+                      background: 'linear-gradient(135deg, #0A84FF 0%, #0066CC 100%)', 
+                      display: 'flex', 
+                      alignItems: 'center', 
+                      justifyContent: 'center', 
+                      boxShadow: '0 4px 16px rgba(10, 132, 255, 0.25)' 
+                    }
+                  }, 
+                    h('svg', {
+                      width: '28',
+                      height: '28',
+                      viewBox: '0 0 24 24',
+                      fill: 'none',
+                      xmlns: 'http://www.w3.org/2000/svg'
+                    },
+                      h('path', {
+                        d: 'M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z',
+                        fill: 'white'
+                      })
+                    )
+                  ),
+                  h('h1', { style: { fontSize: '48px', fontWeight: '700', letterSpacing: '-0.02em', color: '#1d1d1f' }}, 'iMessage Blaster')
+                ),
+                h('p', { style: { fontSize: '21px', lineHeight: '1.4', color: '#86868b', fontWeight: '400', letterSpacing: '-0.01em' }}, 'Send personalized messages at scale through your iPhone.')
+              ),
+              
+              // Tabs
+              h('div', { style: { marginBottom: '48px', borderBottom: '1px solid #d2d2d7' }},
+                h('div', { style: { display: 'flex', gap: '32px' }},
+                  [
+                    { id: 'composer', label: 'Compose' },
+                    { id: 'delivery', label: 'Activity' },
+                    { id: 'contacts', label: 'Contacts' }
+                  ].map(tab => h('button', {
+                    key: tab.id,
+                    onClick: () => setActiveTab(tab.id),
+                    style: {
+                      padding: '12px 0',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: activeTab === tab.id ? '2px solid #1d1d1f' : '2px solid transparent',
+                      color: activeTab === tab.id ? '#1d1d1f' : '#86868b',
+                      cursor: 'pointer',
+                      fontSize: '17px',
+                      fontWeight: activeTab === tab.id ? '600' : '400',
+                      transition: 'all 0.2s ease',
+                      marginBottom: '-1px'
+                    }
+                  }, tab.label))
+                )
+              ),
+              
+              // Content based on tab
+              activeTab === 'composer' ? h('div', { className: 'fade-in' },
+                h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7', marginBottom: '24px' }},
+                  h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Message'),
+                  h('textarea', {
+                    value: messageTemplate,
+                    onChange: (e) => setMessageTemplate(e.target.value),
+                    placeholder: 'Hi {{first_name}}, your appointment is scheduled for {{date}}.',
+                    rows: 6,
+                    style: {
+                      width: '100%',
+                      padding: '16px',
+                      background: '#f5f5f7',
+                      border: '1px solid #d2d2d7',
+                      borderRadius: '12px',
+                      color: '#1d1d1f',
+                      fontSize: '15px',
+                      lineHeight: '1.5',
+                      resize: 'vertical',
+                      fontFamily: 'inherit'
+                    }
+                  }),
+                  h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b', lineHeight: '1.4' }}, 'Use {{variable}} to personalize each message')
+                ),
+                
+                h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7', marginBottom: '24px' }},
+                  h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }},
+                    h('label', { style: { fontSize: '17px', fontWeight: '600', color: '#1d1d1f' }}, 'Recipients'),
+                    h('span', { style: { fontSize: '15px', color: '#86868b' }}, `${selectedContacts.length} of ${contacts.length} selected`)
+                  ),
+                  
+                  contacts.length === 0 ? h('div', { style: { textAlign: 'center', padding: '48px 24px', color: '#86868b' }},
+                    h('p', { style: { fontSize: '15px' }}, 'No contacts yet. Import contacts to get started.')
+                  ) : h('div', null,
+                    h('button', { 
+                      onClick: selectAll, 
+                      style: { 
+                        marginBottom: '16px', 
+                        padding: '8px 16px', 
+                        background: '#f5f5f7', 
+                        border: 'none', 
+                        borderRadius: '8px', 
+                        color: '#1d1d1f', 
+                        fontSize: '13px',
+                        fontWeight: '500',
+                        cursor: 'pointer' 
+                      }
+                    }, selectedContacts.length === contacts.length ? 'Deselect All' : 'Select All'),
+                    
+                    h('div', { style: { maxHeight: '300px', overflowY: 'auto' }},
+                      contacts.map(contact => h('div', {
+                        key: contact.id,
+                        onClick: () => toggleContact(contact),
+                        className: 'contact-row',
+                        style: {
+                          padding: '14px 16px',
+                          marginBottom: '8px',
+                          background: selectedContacts.find(c => c.id === contact.id) ? '#f5f5f7' : '#ffffff',
+                          border: `1px solid ${selectedContacts.find(c => c.id === contact.id) ? '#1d1d1f' : '#d2d2d7'}`,
+                          borderRadius: '10px',
+                          cursor: 'pointer',
+                          display: 'flex',
+                          justifyContent: 'space-between',
+                          alignItems: 'center'
+                        }
+                      },
+                        h('div', null,
+                          h('div', { style: { fontWeight: '500', color: '#1d1d1f', fontSize: '15px', marginBottom: '2px' }}, `${contact.first_name} ${contact.last_name}`),
+                          h('div', { style: { fontSize: '13px', color: '#86868b' }}, contact.phone)
+                        ),
+                        h('div', { style: { 
+                          width: '22px', 
+                          height: '22px', 
+                          borderRadius: '50%', 
+                          background: selectedContacts.find(c => c.id === contact.id) ? '#34C759' : '#ffffff', 
+                          border: `2px solid ${selectedContacts.find(c => c.id === contact.id) ? '#34C759' : '#d2d2d7'}`,
+                          display: 'flex',
+                          alignItems: 'center',
+                          justifyContent: 'center',
+                          color: '#ffffff',
+                          fontSize: '12px',
+                          fontWeight: 'bold'
+                        }}, selectedContacts.find(c => c.id === contact.id) && '✓')
+                      ))
+                    )
+                  )
+                ),
+                
+                h('button', {
+                  onClick: handleSendBlast,
+                  disabled: sending || !messageTemplate || selectedContacts.length === 0,
+                  style: {
+                    width: '100%',
+                    padding: '16px',
+                    background: (sending || !messageTemplate || selectedContacts.length === 0) ? '#d2d2d7' : '#0071e3',
+                    border: 'none',
+                    borderRadius: '12px',
+                    color: '#ffffff',
+                    fontSize: '17px',
+                    fontWeight: '600',
+                    cursor: (sending || !messageTemplate || selectedContacts.length === 0) ? 'not-allowed' : 'pointer',
+                    opacity: (sending || !messageTemplate || selectedContacts.length === 0) ? 0.5 : 1
+                  }
+                }, sending ? 'Sending...' : `Send to ${selectedContacts.length} ${selectedContacts.length === 1 ? 'person' : 'people'}`)
+              ) :
+              
+              activeTab === 'delivery' ? h('div', { className: 'fade-in' },
+                h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '32px' }},
+                  [
+                    { label: 'Total', value: stats.totalBatches, color: '#86868b' },
+                    { label: 'Completed', value: stats.completed, color: '#34C759' },
+                    { label: 'Sending', value: stats.sending, color: '#FF9F0A' },
+                    { label: 'Failed', value: stats.failed, color: '#FF3B30' },
+                    { label: 'Cancelled', value: stats.cancelled, color: '#8E8E93' }
+                  ].map((stat, i) => h('div', { 
+                    key: i, 
+                    className: 'stat-card', 
+                    style: { 
+                      background: '#ffffff', 
+                      borderRadius: '14px', 
+                      padding: '24px 20px', 
+                      border: '1px solid #d2d2d7',
+                      textAlign: 'center'
+                    }
+                  },
+                    h('div', { style: { fontSize: '32px', fontWeight: '700', color: stat.color, marginBottom: '4px', letterSpacing: '-0.02em' }}, stat.value),
+                    h('div', { style: { fontSize: '13px', color: '#86868b', fontWeight: '500' }}, stat.label)
+                  ))
+                ),
+                
+                h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
+                  h('h3', { style: { fontSize: '20px', fontWeight: '600', color: '#1d1d1f', marginBottom: '24px' }}, 'Recent Activity'),
+                  batches.length === 0 ? h('div', { style: { textAlign: 'center', padding: '60px 24px', color: '#86868b' }},
+                    h('p', { style: { fontSize: '15px', marginBottom: '8px' }}, 'No activity yet'),
+                    h('p', { style: { fontSize: '13px' }}, 'Your message batches will appear here')
+                  ) :
+                  batches.map(batch => h('div', { 
+                    key: batch.id, 
+                    className: 'batch-row', 
+                    style: { 
+                      padding: '16px', 
+                      marginBottom: '12px', 
+                      background: '#f5f5f7', 
+                      borderRadius: '12px', 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr auto auto', 
+                      gap: '16px', 
+                      alignItems: 'center' 
+                    }
+                  },
+                    h('div', null,
+                      h('div', { style: { fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '4px' }}, `${batch.total_messages} messages`),
+                      h('div', { style: { fontSize: '13px', color: '#86868b' }}, new Date(batch.created_at).toLocaleString())
+                    ),
+                    h('div', { style: { fontSize: '13px', color: '#86868b' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
+                    h('div', { 
+                      style: { 
+                        padding: '4px 12px', 
+                        borderRadius: '12px', 
+                        fontSize: '12px', 
+                        fontWeight: '600',
+                        background: batch.status === 'completed' ? '#d1f4dd' : 
+                                   batch.status === 'sending' ? '#fff4d1' : 
+                                   batch.status === 'failed' ? '#ffd1d1' : '#e5e5ea',
+                        color: batch.status === 'completed' ? '#1b5e20' :
+                              batch.status === 'sending' ? '#8b6914' :
+                              batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
+                      }
+                    }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1))
+                  ))
+                )
+              ) :
+              
+              // Contacts tab
+              h('div', { className: 'fade-in' },
+                h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7', marginBottom: '24px' }},
+                  h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '16px' }}, 'Import Contacts'),
+                  h('div', {
+                    onClick: () => document.getElementById('csv-upload').click(),
+                    style: { 
+                      border: '2px dashed #d2d2d7', 
+                      borderRadius: '12px', 
+                      padding: '48px 24px', 
+                      textAlign: 'center', 
+                      background: '#f5f5f7', 
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease'
+                    }
+                  },
+                    h('div', { style: { fontSize: '17px', color: '#1d1d1f', marginBottom: '8px', fontWeight: '500' }}, 'Choose a file or drag it here'),
+                    h('p', { style: { color: '#86868b', fontSize: '13px', lineHeight: '1.4' }}, 'CSV format: phone, first_name, last_name')
+                  ),
+                  h('input', { id: 'csv-upload', type: 'file', accept: '.csv', onChange: handleCSVUpload, style: { display: 'none' }})
+                ),
+                
+                h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
+                  h('h3', { style: { fontSize: '20px', fontWeight: '600', color: '#1d1d1f', marginBottom: '24px' }}, `${contacts.length} ${contacts.length === 1 ? 'Contact' : 'Contacts'}`),
+                  contacts.length === 0 ? h('div', { style: { textAlign: 'center', padding: '60px 24px', color: '#86868b' }},
+                    h('p', { style: { fontSize: '15px', marginBottom: '8px' }}, 'No contacts yet'),
+                    h('p', { style: { fontSize: '13px' }}, 'Import a CSV file to get started')
+                  ) :
+                  h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(240px, 1fr))', gap: '12px' }},
+                    contacts.map(contact => h('div', { 
+                      key: contact.id, 
+                      style: { 
+                        background: '#f5f5f7', 
+                        borderRadius: '12px', 
+                        padding: '20px',
+                        border: '1px solid transparent',
+                        transition: 'all 0.2s ease'
+                      }
+                    },
+                      h('div', { style: { fontWeight: '500', color: '#1d1d1f', fontSize: '15px', marginBottom: '4px' }}, `${contact.first_name} ${contact.last_name}`),
+                      h('div', { style: { fontSize: '13px', color: '#86868b' }}, contact.phone)
+                    ))
+                  )
+                )
+              )
+            )
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
