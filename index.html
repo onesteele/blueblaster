@@ -342,8 +342,12 @@
           };
 
           const handleSendBlast = async (customMessage = null, customContacts = null) => {
+            console.log('handleSendBlast called with:', { customMessage, customContacts });
+            
             const message = customMessage || messageTemplate;
             const contacts = customContacts || selectedContacts;
+            
+            console.log('After defaults:', { message, contacts });
             
             if (!message || contacts.length === 0) {
               alert('Please enter a message and select contacts');
@@ -834,6 +838,9 @@
               metadata: {}
             }));
 
+            console.log('QuickSend - Message:', message);
+            console.log('QuickSend - Temp Contacts:', tempContacts);
+            
             await handleSendBlast(message, tempContacts);
           };
 
