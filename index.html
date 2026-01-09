@@ -341,8 +341,11 @@
             }
           };
 
-          const handleSendBlast = async () => {
-            if (!messageTemplate || selectedContacts.length === 0) {
+          const handleSendBlast = async (customMessage = null, customContacts = null) => {
+            const message = customMessage || messageTemplate;
+            const contacts = customContacts || selectedContacts;
+            
+            if (!message || contacts.length === 0) {
               alert('Please enter a message and select contacts');
               return;
             }
@@ -353,18 +356,18 @@
                 .from('message_batches')
                 .insert({
                   platform: platform,
-                  message_template: messageTemplate,
-                  total_messages: selectedContacts.length,
+                  message_template: message,
+                  total_messages: contacts.length,
                   status: 'pending'
                 }).select().single();
 
               if (batchError) throw batchError;
 
-              const messages = selectedContacts.map(contact => ({
+              const messages = contacts.map(contact => ({
                 batch_id: batch.id,
-                contact_id: contact.id,
-                phone_number: contact.phone,
-                message: personalizeMessage(messageTemplate, contact),
+                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
+                phone_number: normalizePhoneNumber(contact.phone),
+                message: personalizeMessage(message, contact),
                 status: 'queued'
               }));
 
