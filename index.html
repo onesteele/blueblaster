@@ -226,24 +226,6 @@
           const [searchQuery, setSearchQuery] = useState('');
           const [stats, setStats] = useState({ totalBatches: 0, completed: 0, sending: 0, failed: 0, cancelled: 0 });
           const [error, setError] = useState(null);
-          const [expandedBatch, setExpandedBatch] = useState(null);
-          const [batchMessages, setBatchMessages] = useState({});
-
-          const fetchBatchMessages = async (batchId) => {
-            try {
-              const { data, error } = await supabaseClient
-                .from('messages')
-                .select('*')
-                .eq('batch_id', batchId)
-                .order('created_at', { ascending: true });
-              
-              if (!error && data) {
-                setBatchMessages(prev => ({ ...prev, [batchId]: data }));
-              }
-            } catch (err) {
-              console.error('Error fetching batch messages:', err);
-            }
-          };
 
           const handleResumeBatch = async (batchId) => {
             try {
@@ -923,13 +905,10 @@
                 DeliveryView({ 
                   batches, 
                   stats, 
-                  expandedBatch, 
-                  setExpandedBatch,
-                  batchMessages,
-                  fetchBatchMessages,
                   handleResumeBatch,
                   handleRetryFailed,
-                  normalizePhoneNumber
+                  normalizePhoneNumber,
+                  supabaseClient
                 })
               )
             ),
@@ -1738,7 +1717,25 @@
         }
 
         function DeliveryView(props) {
-          const { batches, stats, expandedBatch, setExpandedBatch, batchMessages, fetchBatchMessages, handleResumeBatch, handleRetryFailed, normalizePhoneNumber } = props;
+          const { batches, stats, handleResumeBatch, handleRetryFailed, normalizePhoneNumber, supabaseClient } = props;
+          const [expandedBatch, setExpandedBatch] = React.useState(null);
+          const [batchMessages, setBatchMessages] = React.useState({});
+
+          const fetchBatchMessages = async (batchId) => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('batch_id', batchId)
+                .order('created_at', { ascending: true });
+              
+              if (!error && data) {
+                setBatchMessages(prev => ({ ...prev, [batchId]: data }));
+              }
+            } catch (err) {
+              console.error('Error fetching batch messages:', err);
+            }
+          };
 
           const toggleBatch = (batchId) => {
             if (expandedBatch === batchId) {
