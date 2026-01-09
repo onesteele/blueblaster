@@ -365,7 +365,7 @@
 
               const messages = contacts.map(contact => ({
                 batch_id: batch.id,
-                contact_id: contact.id,
+                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
                 phone_number: normalizePhoneNumber(contact.phone),
                 message: personalizeMessage(message, contact),
                 status: 'queued'
