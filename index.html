@@ -226,6 +226,127 @@
           const [searchQuery, setSearchQuery] = useState('');
           const [stats, setStats] = useState({ totalBatches: 0, completed: 0, sending: 0, failed: 0, cancelled: 0 });
           const [error, setError] = useState(null);
+          const [expandedBatch, setExpandedBatch] = useState(null);
+          const [batchMessages, setBatchMessages] = useState({});
+
+          const fetchBatchMessages = async (batchId) => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('batch_id', batchId)
+                .order('created_at', { ascending: true });
+              
+              if (!error && data) {
+                setBatchMessages(prev => ({ ...prev, [batchId]: data }));
+              }
+            } catch (err) {
+              console.error('Error fetching batch messages:', err);
+            }
+          };
+
+          const handleResumeBatch = async (batchId) => {
+            try {
+              // Get all unsent messages (queued or failed status)
+              const { data: messages, error: fetchError } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('batch_id', batchId)
+                .in('status', ['queued', 'failed']);
+
+              if (fetchError) throw fetchError;
+
+              if (!messages || messages.length === 0) {
+                alert('No messages to resume. All messages have been sent or are currently sending.');
+                return;
+              }
+
+              // Update batch status to sending
+              await supabaseClient
+                .from('message_batches')
+                .update({ status: 'sending' })
+                .eq('id', batchId);
+
+              // Reset failed messages back to queued
+              await supabaseClient
+                .from('messages')
+                .update({ status: 'queued' })
+                .eq('batch_id', batchId)
+                .eq('status', 'failed');
+
+              // Launch shortcut with same batch ID
+              const { data: batch } = await supabaseClient
+                .from('message_batches')
+                .select('*')
+                .eq('id', batchId)
+                .single();
+
+              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
+                batchId: batchId,
+                supabaseUrl: SUPABASE_URL,
+                supabaseKey: SUPABASE_ANON_KEY
+              }))}`;
+
+              window.location.href = shortcutUrl;
+              
+              setTimeout(() => {
+                alert(`Resuming batch with ${messages.length} remaining messages...`);
+                fetchBatches();
+                fetchStats();
+              }, 500);
+            } catch (err) {
+              console.error('Error resuming batch:', err);
+              alert('Error resuming batch: ' + err.message);
+            }
+          };
+
+          const handleRetryFailed = async (batchId) => {
+            try {
+              // Get only failed messages
+              const { data: messages, error: fetchError } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('batch_id', batchId)
+                .eq('status', 'failed');
+
+              if (fetchError) throw fetchError;
+
+              if (!messages || messages.length === 0) {
+                alert('No failed messages to retry.');
+                return;
+              }
+
+              // Reset failed messages to queued
+              await supabaseClient
+                .from('messages')
+                .update({ status: 'queued' })
+                .eq('batch_id', batchId)
+                .eq('status', 'failed');
+
+              // Update batch status
+              await supabaseClient
+                .from('message_batches')
+                .update({ status: 'sending' })
+                .eq('id', batchId);
+
+              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
+                batchId: batchId,
+                supabaseUrl: SUPABASE_URL,
+                supabaseKey: SUPABASE_ANON_KEY
+              }))}`;
+
+              window.location.href = shortcutUrl;
+              
+              setTimeout(() => {
+                alert(`Retrying ${messages.length} failed messages...`);
+                fetchBatches();
+                fetchStats();
+              }, 500);
+            } catch (err) {
+              console.error('Error retrying failed messages:', err);
+              alert('Error retrying: ' + err.message);
+            }
+          };
 
           useEffect(() => {
             try {
@@ -799,7 +920,17 @@
               ),
               
               h('div', { style: { display: activeTab === 'delivery' ? 'block' : 'none' }},
-                DeliveryView({ batches, stats })
+                DeliveryView({ 
+                  batches, 
+                  stats, 
+                  expandedBatch, 
+                  setExpandedBatch,
+                  batchMessages,
+                  fetchBatchMessages,
+                  handleResumeBatch,
+                  handleRetryFailed,
+                  normalizePhoneNumber
+                })
               )
             ),
             
@@ -1607,7 +1738,27 @@
         }
 
         function DeliveryView(props) {
-          const { batches, stats } = props;
+          const { batches, stats, expandedBatch, setExpandedBatch, batchMessages, fetchBatchMessages, handleResumeBatch, handleRetryFailed, normalizePhoneNumber } = props;
+
+          const toggleBatch = (batchId) => {
+            if (expandedBatch === batchId) {
+              setExpandedBatch(null);
+            } else {
+              setExpandedBatch(batchId);
+              if (!batchMessages[batchId]) {
+                fetchBatchMessages(batchId);
+              }
+            }
+          };
+
+          const getMessageStats = (messages) => {
+            if (!messages) return { queued: 0, sent: 0, failed: 0 };
+            return {
+              queued: messages.filter(m => m.status === 'queued').length,
+              sent: messages.filter(m => m.status === 'sent').length,
+              failed: messages.filter(m => m.status === 'failed').length
+            };
+          };
 
           return h('div', { className: 'fade-in' },
             h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '32px' }},
@@ -1638,40 +1789,133 @@
                 h('p', { style: { fontSize: '15px', marginBottom: '8px' }}, 'No activity yet'),
                 h('p', { style: { fontSize: '13px' }}, 'Your message batches will appear here')
               ) :
-              batches.map(batch => h('div', { 
-                key: batch.id, 
-                className: 'batch-row', 
-                style: { 
-                  padding: '16px', 
-                  marginBottom: '12px', 
-                  background: '#f5f5f7', 
-                  borderRadius: '12px', 
-                  display: 'grid', 
-                  gridTemplateColumns: '1fr auto auto', 
-                  gap: '16px', 
-                  alignItems: 'center' 
-                }
-              },
-                h('div', null,
-                  h('div', { style: { fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '4px' }}, `${batch.total_messages} messages`),
-                  h('div', { style: { fontSize: '13px', color: '#86868b' }}, new Date(batch.created_at).toLocaleString())
-                ),
-                h('div', { style: { fontSize: '13px', color: '#86868b' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
-                h('div', { 
+              batches.map(batch => {
+                const messages = batchMessages[batch.id];
+                const messageStats = getMessageStats(messages);
+                const isExpanded = expandedBatch === batch.id;
+                const hasUnsent = messageStats.queued > 0 || messageStats.failed > 0;
+
+                return h('div', { 
+                  key: batch.id, 
                   style: { 
-                    padding: '4px 12px', 
-                    borderRadius: '12px', 
-                    fontSize: '12px', 
-                    fontWeight: '600',
-                    background: batch.status === 'completed' ? '#d1f4dd' : 
-                               batch.status === 'sending' ? '#fff4d1' : 
-                               batch.status === 'failed' ? '#ffd1d1' : '#e5e5ea',
-                    color: batch.status === 'completed' ? '#1b5e20' :
-                          batch.status === 'sending' ? '#8b6914' :
-                          batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
+                    marginBottom: '12px', 
+                    background: '#f5f5f7', 
+                    borderRadius: '12px',
+                    overflow: 'hidden'
                   }
-                }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1))
-              ))
+                },
+                  // Batch Header
+                  h('div', { 
+                    className: 'batch-row', 
+                    onClick: () => toggleBatch(batch.id),
+                    style: { 
+                      padding: '16px', 
+                      display: 'grid', 
+                      gridTemplateColumns: '1fr auto auto auto', 
+                      gap: '16px', 
+                      alignItems: 'center',
+                      cursor: 'pointer',
+                      transition: 'background 0.2s ease'
+                    }
+                  },
+                    h('div', null,
+                      h('div', { style: { fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '4px' }}, 
+                        `${batch.total_messages} messages`,
+                        messages && h('span', { style: { fontSize: '13px', color: '#86868b', marginLeft: '8px' }}, 
+                          `(${messageStats.sent} sent, ${messageStats.queued + messageStats.failed} remaining)`
+                        )
+                      ),
+                      h('div', { style: { fontSize: '13px', color: '#86868b' }}, new Date(batch.created_at).toLocaleString())
+                    ),
+                    h('div', { style: { fontSize: '13px', color: '#86868b' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
+                    h('div', { 
+                      style: { 
+                        padding: '4px 12px', 
+                        borderRadius: '12px', 
+                        fontSize: '12px', 
+                        fontWeight: '600',
+                        background: batch.status === 'completed' ? '#d1f4dd' : 
+                                   batch.status === 'sending' ? '#fff4d1' : 
+                                   batch.status === 'failed' ? '#ffd1d1' : '#e5e5ea',
+                        color: batch.status === 'completed' ? '#1b5e20' :
+                              batch.status === 'sending' ? '#8b6914' :
+                              batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
+                      }
+                    }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1)),
+                    h('div', { style: { fontSize: '18px', color: '#86868b', transition: 'transform 0.2s ease', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}, '▼')
+                  ),
+
+                  // Expanded Details
+                  isExpanded && h('div', { style: { padding: '16px', background: 'white', borderTop: '1px solid #d2d2d7' }},
+                    // Action Buttons
+                    hasUnsent && h('div', { style: { marginBottom: '16px', display: 'flex', gap: '12px' }},
+                      h('button', {
+                        onClick: (e) => { e.stopPropagation(); handleResumeBatch(batch.id); },
+                        style: {
+                          padding: '10px 20px',
+                          background: '#0071e3',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }
+                      }, `▶ Resume (${messageStats.queued + messageStats.failed} remaining)`),
+                      messageStats.failed > 0 && h('button', {
+                        onClick: (e) => { e.stopPropagation(); handleRetryFailed(batch.id); },
+                        style: {
+                          padding: '10px 20px',
+                          background: '#FF9F0A',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '14px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }
+                      }, `🔄 Retry Failed (${messageStats.failed})`)
+                    ),
+
+                    // Message List
+                    !messages ? h('div', { style: { textAlign: 'center', padding: '20px', color: '#86868b' }}, 'Loading messages...') :
+                    h('div', { style: { maxHeight: '400px', overflowY: 'auto' }},
+                      h('div', { style: { fontSize: '13px', fontWeight: '600', color: '#86868b', marginBottom: '12px', display: 'grid', gridTemplateColumns: '200px 1fr 100px', gap: '12px', padding: '8px' }},
+                        h('div', null, 'Phone Number'),
+                        h('div', null, 'Message Preview'),
+                        h('div', null, 'Status')
+                      ),
+                      messages.map(msg => h('div', {
+                        key: msg.id,
+                        style: {
+                          display: 'grid',
+                          gridTemplateColumns: '200px 1fr 100px',
+                          gap: '12px',
+                          padding: '12px 8px',
+                          borderBottom: '1px solid #f5f5f7',
+                          fontSize: '13px'
+                        }
+                      },
+                        h('div', { style: { fontFamily: 'monospace', color: '#1d1d1f', fontWeight: '500' }}, normalizePhoneNumber(msg.phone_number)),
+                        h('div', { style: { color: '#86868b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}, msg.message),
+                        h('div', { 
+                          style: { 
+                            padding: '4px 8px',
+                            borderRadius: '8px',
+                            fontSize: '11px',
+                            fontWeight: '600',
+                            textAlign: 'center',
+                            background: msg.status === 'sent' ? '#d1f4dd' : 
+                                       msg.status === 'queued' ? '#e5e5ea' : '#ffd1d1',
+                            color: msg.status === 'sent' ? '#1b5e20' :
+                                  msg.status === 'queued' ? '#3a3a3c' : '#8b1414'
+                          }
+                        }, msg.status === 'sent' ? '✓ Sent' : msg.status === 'queued' ? 'Queued' : '✗ Failed')
+                      ))
+                    )
+                  )
+                );
+              })
             )
           );
         }
