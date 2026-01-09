@@ -611,6 +611,7 @@
                 h('div', { style: { display: 'flex', gap: '32px' }},
                   [
                     { id: 'contacts', label: 'Contacts' },
+                    { id: 'quicksend', label: 'Quick Send' },
                     { id: 'composer', label: 'Compose' },
                     { id: 'delivery', label: 'Activity' }
                   ].map(tab => h('button', {
@@ -754,6 +755,14 @@
                 })
               ),
               
+              h('div', { style: { display: activeTab === 'quicksend' ? 'block' : 'none' }},
+                QuickSendView({
+                  normalizePhoneNumber,
+                  handleSendBlast,
+                  sending
+                })
+              ),
+              
               h('div', { style: { display: activeTab === 'composer' ? 'block' : 'none' }},
                 ComposerView({
                   messageTemplate,
@@ -779,6 +788,135 @@
               onClose: () => { setShowContactModal(false); setEditingContact(null); },
               onSave: saveContact
             })
+          );
+        }
+
+        function QuickSendView(props) {
+          const { normalizePhoneNumber, handleSendBlast, sending } = props;
+          const [phoneList, setPhoneList] = React.useState('');
+          const [message, setMessage] = React.useState('');
+          const [parsedNumbers, setParsedNumbers] = React.useState([]);
+
+          const parsePhoneNumbers = () => {
+            if (!phoneList.trim()) {
+              setParsedNumbers([]);
+              return;
+            }
+
+            const numbers = phoneList
+              .split(/[\n,;\s]+/)
+              .map(num => num.trim())
+              .filter(num => num.length > 0)
+              .map(num => normalizePhoneNumber(num));
+
+            const unique = [...new Set(numbers)];
+            setParsedNumbers(unique);
+          };
+
+          React.useEffect(() => {
+            parsePhoneNumbers();
+          }, [phoneList]);
+
+          const handleQuickSend = async () => {
+            if (!message || parsedNumbers.length === 0) {
+              alert('Please enter a message and at least one phone number');
+              return;
+            }
+
+            const tempContacts = parsedNumbers.map((phone, index) => ({
+              id: `temp_${Date.now()}_${index}`,
+              phone: phone,
+              first_name: '',
+              last_name: '',
+              metadata: {}
+            }));
+
+            await handleSendBlast(message, tempContacts);
+          };
+
+          return h('div', { className: 'fade-in' },
+            h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7', marginBottom: '24px' }},
+              h('h2', { style: { fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}, 'Quick Send'),
+              h('p', { style: { fontSize: '15px', color: '#86868b', marginBottom: '24px' }}, 'Paste a list of phone numbers and send a message instantly.')
+            ),
+
+            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }},
+              h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
+                h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Phone Numbers'),
+                h('textarea', {
+                  value: phoneList,
+                  onChange: (e) => setPhoneList(e.target.value),
+                  placeholder: 'Paste phone numbers here...\n\n5551234567\n+1-555-234-5678\n(555) 345-6789',
+                  rows: 12,
+                  style: {
+                    width: '100%',
+                    padding: '16px',
+                    background: '#f5f5f7',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    color: '#1d1d1f',
+                    fontSize: '15px',
+                    lineHeight: '1.5',
+                    resize: 'vertical',
+                    fontFamily: 'monospace'
+                  }
+                }),
+                h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
+                  parsedNumbers.length > 0 
+                    ? `✓ ${parsedNumbers.length} number${parsedNumbers.length === 1 ? '' : 's'} detected` 
+                    : 'Separate with commas, spaces, or new lines'
+                ),
+                parsedNumbers.length > 0 && h('div', { style: { marginTop: '16px', padding: '12px', background: '#f5f5f7', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto' }},
+                  h('div', { style: { fontSize: '13px', color: '#86868b', marginBottom: '8px', fontWeight: '600' }}, 'Formatted Numbers:'),
+                  parsedNumbers.map((num, i) => h('div', { key: i, style: { fontSize: '13px', color: '#1d1d1f', fontFamily: 'monospace' }}, num))
+                )
+              ),
+
+              h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
+                h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Message'),
+                h('textarea', {
+                  value: message,
+                  onChange: (e) => setMessage(e.target.value),
+                  placeholder: 'Type your message here...',
+                  rows: 12,
+                  style: {
+                    width: '100%',
+                    padding: '16px',
+                    background: '#f5f5f7',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    color: '#1d1d1f',
+                    fontSize: '15px',
+                    lineHeight: '1.5',
+                    resize: 'vertical',
+                    fontFamily: 'inherit'
+                  }
+                }),
+                h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
+                  `${message.length} characters`
+                )
+              )
+            ),
+
+            h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
+              h('button', {
+                onClick: handleQuickSend,
+                disabled: sending || !message || parsedNumbers.length === 0,
+                style: {
+                  width: '100%',
+                  padding: '16px',
+                  background: (sending || !message || parsedNumbers.length === 0) ? '#d2d2d7' : '#0071e3',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#ffffff',
+                  fontSize: '17px',
+                  fontWeight: '600',
+                  cursor: (sending || !message || parsedNumbers.length === 0) ? 'not-allowed' : 'pointer',
+                  opacity: (sending || !message || parsedNumbers.length === 0) ? 0.5 : 1,
+                  transition: 'all 0.2s ease'
+                }
+              }, sending ? 'Sending...' : `Send to ${parsedNumbers.length} ${parsedNumbers.length === 1 ? 'number' : 'numbers'}`)
+            )
           );
         }
 
