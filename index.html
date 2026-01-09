@@ -227,109 +227,6 @@
           const [stats, setStats] = useState({ totalBatches: 0, completed: 0, sending: 0, failed: 0, cancelled: 0 });
           const [error, setError] = useState(null);
 
-          const handleResumeBatch = async (batchId) => {
-            try {
-              // Get all unsent messages (queued or failed status)
-              const { data: messages, error: fetchError } = await supabaseClient
-                .from('messages')
-                .select('*')
-                .eq('batch_id', batchId)
-                .in('status', ['queued', 'failed']);
-
-              if (fetchError) throw fetchError;
-
-              if (!messages || messages.length === 0) {
-                alert('No messages to resume. All messages have been sent or are currently sending.');
-                return;
-              }
-
-              // Update batch status to sending
-              await supabaseClient
-                .from('message_batches')
-                .update({ status: 'sending' })
-                .eq('id', batchId);
-
-              // Reset failed messages back to queued
-              await supabaseClient
-                .from('messages')
-                .update({ status: 'queued' })
-                .eq('batch_id', batchId)
-                .eq('status', 'failed');
-
-              // Launch shortcut with same batch ID
-              const { data: batch } = await supabaseClient
-                .from('message_batches')
-                .select('*')
-                .eq('id', batchId)
-                .single();
-
-              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
-                batchId: batchId,
-                supabaseUrl: SUPABASE_URL,
-                supabaseKey: SUPABASE_ANON_KEY
-              }))}`;
-
-              window.location.href = shortcutUrl;
-              
-              setTimeout(() => {
-                alert(`Resuming batch with ${messages.length} remaining messages...`);
-                fetchBatches();
-                fetchStats();
-              }, 500);
-            } catch (err) {
-              console.error('Error resuming batch:', err);
-              alert('Error resuming batch: ' + err.message);
-            }
-          };
-
-          const handleRetryFailed = async (batchId) => {
-            try {
-              // Get only failed messages
-              const { data: messages, error: fetchError } = await supabaseClient
-                .from('messages')
-                .select('*')
-                .eq('batch_id', batchId)
-                .eq('status', 'failed');
-
-              if (fetchError) throw fetchError;
-
-              if (!messages || messages.length === 0) {
-                alert('No failed messages to retry.');
-                return;
-              }
-
-              // Reset failed messages to queued
-              await supabaseClient
-                .from('messages')
-                .update({ status: 'queued' })
-                .eq('batch_id', batchId)
-                .eq('status', 'failed');
-
-              // Update batch status
-              await supabaseClient
-                .from('message_batches')
-                .update({ status: 'sending' })
-                .eq('id', batchId);
-
-              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
-                batchId: batchId,
-                supabaseUrl: SUPABASE_URL,
-                supabaseKey: SUPABASE_ANON_KEY
-              }))}`;
-
-              window.location.href = shortcutUrl;
-              
-              setTimeout(() => {
-                alert(`Retrying ${messages.length} failed messages...`);
-                fetchBatches();
-                fetchStats();
-              }, 500);
-            } catch (err) {
-              console.error('Error retrying failed messages:', err);
-              alert('Error retrying: ' + err.message);
-            }
-          };
-
           useEffect(() => {
             try {
               fetchContacts();
@@ -444,11 +341,8 @@
             }
           };
 
-          const handleSendBlast = async (customMessage = null, customContacts = null) => {
-            const message = customMessage || messageTemplate;
-            const contacts = customContacts || selectedContacts;
-            
-            if (!message || contacts.length === 0) {
+          const handleSendBlast = async () => {
+            if (!messageTemplate || selectedContacts.length === 0) {
               alert('Please enter a message and select contacts');
               return;
             }
@@ -459,18 +353,18 @@
                 .from('message_batches')
                 .insert({
                   platform: platform,
-                  message_template: message,
-                  total_messages: contacts.length,
+                  message_template: messageTemplate,
+                  total_messages: selectedContacts.length,
                   status: 'pending'
                 }).select().single();
 
               if (batchError) throw batchError;
 
-              const messages = contacts.map(contact => ({
+              const messages = selectedContacts.map(contact => ({
                 batch_id: batch.id,
-                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
-                phone_number: normalizePhoneNumber(contact.phone),
-                message: personalizeMessage(message, contact),
+                contact_id: contact.id,
+                phone_number: contact.phone,
+                message: personalizeMessage(messageTemplate, contact),
                 status: 'queued'
               }));
 
@@ -526,21 +420,8 @@
           };
 
           const normalizePhoneNumber = (phone) => {
-            if (!phone) return '';
-            
-            // Remove all non-digit characters except +
-            let cleaned = phone.replace(/[^\d+]/g, '');
-            
-            // If already starts with +, keep it
-            if (cleaned.startsWith('+')) {
-              return cleaned;
-            }
-            
-            // Remove any leading + that was in the middle
-            cleaned = cleaned.replace(/\+/g, '');
-            
-            // Remove all non-digits for length checking
-            const digits = cleaned.replace(/\D/g, '');
+            // Remove all non-digit characters
+            const digits = phone.replace(/\D/g, '');
             
             // Detect country code based on length and pattern
             if (digits.length === 10) {
@@ -552,22 +433,16 @@
             } else if (digits.length === 12 && digits.startsWith('44')) {
               // UK number
               return '+' + digits;
-            } else if (digits.length === 11 && digits.startsWith('44')) {
-              // UK number (shorter format)
-              return '+' + digits;
             } else if (digits.length === 11 && digits.startsWith('61')) {
               // Australia
               return '+' + digits;
             } else if (digits.length === 12 && digits.startsWith('971')) {
               // UAE
               return '+' + digits;
-            } else if (digits.length === 12 && digits.startsWith('52')) {
-              // Mexico
-              return '+' + digits;
             } else if (digits.length === 10 && digits.startsWith('52')) {
-              // Mexico (shorter)
+              // Mexico
               return '+52' + digits.substring(2);
-            } else if (digits.length === 12 && digits.startsWith('91')) {
+            } else if (digits.length === 13 && digits.startsWith('91')) {
               // India
               return '+' + digits;
             } else if (digits.length === 11 && digits.startsWith('86')) {
@@ -576,18 +451,18 @@
             } else if (digits.length === 11 && digits.startsWith('81')) {
               // Japan
               return '+' + digits;
-            } else if (digits.length === 11 && digits.startsWith('33')) {
+            } else if (digits.length === 12 && digits.startsWith('33')) {
               // France
               return '+' + digits;
             } else if (digits.length === 12 && digits.startsWith('49')) {
               // Germany
               return '+' + digits;
-            } else if (digits.length === 11 && digits.startsWith('49')) {
-              // Germany (shorter)
+            } else if (digits.startsWith('+')) {
+              // Already has + prefix
               return '+' + digits;
             } else {
-              // Default: add + if not present
-              return '+' + digits;
+              // Default: assume it already has proper format or add +
+              return digits.startsWith('+') ? digits : '+' + digits;
             }
           };
 
@@ -736,7 +611,6 @@
                 h('div', { style: { display: 'flex', gap: '32px' }},
                   [
                     { id: 'contacts', label: 'Contacts' },
-                    { id: 'quicksend', label: 'Quick Send' },
                     { id: 'composer', label: 'Compose' },
                     { id: 'delivery', label: 'Activity' }
                   ].map(tab => h('button', {
@@ -880,14 +754,6 @@
                 })
               ),
               
-              h('div', { style: { display: activeTab === 'quicksend' ? 'block' : 'none' }},
-                QuickSendView({
-                  normalizePhoneNumber,
-                  handleSendBlast,
-                  sending
-                })
-              ),
-              
               h('div', { style: { display: activeTab === 'composer' ? 'block' : 'none' }},
                 ComposerView({
                   messageTemplate,
@@ -902,14 +768,7 @@
               ),
               
               h('div', { style: { display: activeTab === 'delivery' ? 'block' : 'none' }},
-                DeliveryView({ 
-                  batches, 
-                  stats, 
-                  handleResumeBatch,
-                  handleRetryFailed,
-                  normalizePhoneNumber,
-                  supabaseClient
-                })
+                DeliveryView({ batches, stats })
               )
             ),
             
@@ -920,152 +779,6 @@
               onClose: () => { setShowContactModal(false); setEditingContact(null); },
               onSave: saveContact
             })
-          );
-        }
-
-        function QuickSendView(props) {
-          const { normalizePhoneNumber, handleSendBlast, sending } = props;
-          const [phoneList, setPhoneList] = React.useState('');
-          const [message, setMessage] = React.useState('');
-          const [parsedNumbers, setParsedNumbers] = React.useState([]);
-
-          const parsePhoneNumbers = () => {
-            if (!phoneList.trim()) {
-              setParsedNumbers([]);
-              return;
-            }
-
-            // Split by newlines, commas, semicolons, or spaces
-            const numbers = phoneList
-              .split(/[\n,;\s]+/)
-              .map(num => num.trim())
-              .filter(num => num.length > 0)
-              .map(num => normalizePhoneNumber(num));
-
-            // Remove duplicates
-            const unique = [...new Set(numbers)];
-            setParsedNumbers(unique);
-          };
-
-          React.useEffect(() => {
-            parsePhoneNumbers();
-          }, [phoneList]);
-
-          const handleQuickSend = async () => {
-            if (!message || parsedNumbers.length === 0) {
-              alert('Please enter a message and at least one phone number');
-              return;
-            }
-
-            // Create temporary contacts for sending
-            const tempContacts = parsedNumbers.map((phone, index) => ({
-              id: `temp_${Date.now()}_${index}`,
-              phone: phone,
-              first_name: '',
-              last_name: '',
-              metadata: {}
-            }));
-
-            // Use the existing handleSendBlast with temp contacts
-            await handleSendBlast(message, tempContacts);
-          };
-
-          return h('div', { className: 'fade-in' },
-            h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7', marginBottom: '24px' }},
-              h('h2', { style: { fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}, 'Quick Send'),
-              h('p', { style: { fontSize: '15px', color: '#86868b', marginBottom: '24px' }}, 'Paste a list of phone numbers and send a message instantly - no need to save contacts.')
-            ),
-
-            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }},
-              // Left: Phone Numbers
-              h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
-                h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Phone Numbers'),
-                h('textarea', {
-                  value: phoneList,
-                  onChange: (e) => setPhoneList(e.target.value),
-                  placeholder: 'Paste phone numbers here...\n\n5551234567\n+1-555-234-5678\n(555) 345-6789\n15553456789',
-                  rows: 12,
-                  style: {
-                    width: '100%',
-                    padding: '16px',
-                    background: '#f5f5f7',
-                    border: '1px solid #d2d2d7',
-                    borderRadius: '12px',
-                    color: '#1d1d1f',
-                    fontSize: '15px',
-                    lineHeight: '1.5',
-                    resize: 'vertical',
-                    fontFamily: 'monospace'
-                  }
-                }),
-                h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
-                  parsedNumbers.length > 0 
-                    ? `✓ ${parsedNumbers.length} number${parsedNumbers.length === 1 ? '' : 's'} detected` 
-                    : 'Separate with commas, spaces, or new lines'
-                ),
-                parsedNumbers.length > 0 && h('div', { style: { marginTop: '16px', padding: '12px', background: '#f5f5f7', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto' }},
-                  h('div', { style: { fontSize: '13px', color: '#86868b', marginBottom: '8px', fontWeight: '600' }}, 'Formatted Numbers:'),
-                  parsedNumbers.map((num, i) => h('div', { key: i, style: { fontSize: '13px', color: '#1d1d1f', fontFamily: 'monospace' }}, num))
-                )
-              ),
-
-              // Right: Message
-              h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
-                h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Message'),
-                h('textarea', {
-                  value: message,
-                  onChange: (e) => setMessage(e.target.value),
-                  placeholder: 'Type your message here...\n\nThis will be sent to all numbers in the list.',
-                  rows: 12,
-                  style: {
-                    width: '100%',
-                    padding: '16px',
-                    background: '#f5f5f7',
-                    border: '1px solid #d2d2d7',
-                    borderRadius: '12px',
-                    color: '#1d1d1f',
-                    fontSize: '15px',
-                    lineHeight: '1.5',
-                    resize: 'vertical',
-                    fontFamily: 'inherit'
-                  }
-                }),
-                h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
-                  `${message.length} characters`
-                )
-              )
-            ),
-
-            h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7' }},
-              h('div', { style: { marginBottom: '16px' }},
-                h('h3', { style: { fontSize: '17px', fontWeight: '600', marginBottom: '8px' }}, 'Format Examples'),
-                h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(3, 1fr)', gap: '12px', fontSize: '13px', color: '#86868b' }},
-                  h('div', null, '• 5551234567'),
-                  h('div', null, '• +1-555-234-5678'),
-                  h('div', null, '• (555) 345-6789'),
-                  h('div', null, '• 15553456789'),
-                  h('div', null, '• +44 7911 123456'),
-                  h('div', null, '• Any format works!')
-                )
-              ),
-              h('button', {
-                onClick: handleQuickSend,
-                disabled: sending || !message || parsedNumbers.length === 0,
-                style: {
-                  width: '100%',
-                  padding: '16px',
-                  background: (sending || !message || parsedNumbers.length === 0) ? '#d2d2d7' : '#0071e3',
-                  border: 'none',
-                  borderRadius: '12px',
-                  color: '#ffffff',
-                  fontSize: '17px',
-                  fontWeight: '600',
-                  cursor: (sending || !message || parsedNumbers.length === 0) ? 'not-allowed' : 'pointer',
-                  opacity: (sending || !message || parsedNumbers.length === 0) ? 0.5 : 1,
-                  transition: 'all 0.2s ease'
-                }
-              }, sending ? 'Sending...' : `Send to ${parsedNumbers.length} ${parsedNumbers.length === 1 ? 'number' : 'numbers'}`)
-            )
           );
         }
 
@@ -1717,44 +1430,45 @@
         }
 
         function DeliveryView(props) {
-          const { batches, stats, handleResumeBatch, handleRetryFailed, normalizePhoneNumber, supabaseClient } = props;
+          const { batches, stats } = props;
           const [expandedBatch, setExpandedBatch] = React.useState(null);
-          const [batchMessages, setBatchMessages] = React.useState({});
+          const [unsentNumbers, setUnsentNumbers] = React.useState(null);
+          const [loading, setLoading] = React.useState(false);
 
-          const fetchBatchMessages = async (batchId) => {
+          const showUnsentNumbers = async (batchId) => {
+            setLoading(true);
             try {
-              const { data, error } = await supabaseClient
+              const { data: messages, error } = await supabaseClient
                 .from('messages')
-                .select('*')
+                .select('phone_number, status')
                 .eq('batch_id', batchId)
                 .order('created_at', { ascending: true });
+
+              if (error) throw error;
+
+              const unsent = messages.filter(m => m.status === 'queued' || m.status === 'failed');
+              const sent = messages.filter(m => m.status === 'sent');
               
-              if (!error && data) {
-                setBatchMessages(prev => ({ ...prev, [batchId]: data }));
-              }
-            } catch (err) {
-              console.error('Error fetching batch messages:', err);
-            }
-          };
-
-          const toggleBatch = (batchId) => {
-            if (expandedBatch === batchId) {
-              setExpandedBatch(null);
-            } else {
+              setUnsentNumbers({
+                batchId,
+                unsent: unsent.map(m => m.phone_number),
+                sent: sent.map(m => m.phone_number),
+                total: messages.length
+              });
               setExpandedBatch(batchId);
-              if (!batchMessages[batchId]) {
-                fetchBatchMessages(batchId);
-              }
+            } catch (err) {
+              alert('Error fetching messages: ' + err.message);
+            } finally {
+              setLoading(false);
             }
           };
 
-          const getMessageStats = (messages) => {
-            if (!messages) return { queued: 0, sent: 0, failed: 0 };
-            return {
-              queued: messages.filter(m => m.status === 'queued').length,
-              sent: messages.filter(m => m.status === 'sent').length,
-              failed: messages.filter(m => m.status === 'failed').length
-            };
+          const copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text).then(() => {
+              alert('✓ Copied to clipboard! Paste into Quick Send tab.');
+            }).catch(() => {
+              alert('Please manually select and copy the numbers');
+            });
           };
 
           return h('div', { className: 'fade-in' },
@@ -1786,133 +1500,140 @@
                 h('p', { style: { fontSize: '15px', marginBottom: '8px' }}, 'No activity yet'),
                 h('p', { style: { fontSize: '13px' }}, 'Your message batches will appear here')
               ) :
-              batches.map(batch => {
-                const messages = batchMessages[batch.id];
-                const messageStats = getMessageStats(messages);
-                const isExpanded = expandedBatch === batch.id;
-                const hasUnsent = messageStats.queued > 0 || messageStats.failed > 0;
-
-                return h('div', { 
-                  key: batch.id, 
+              batches.map(batch => h('div', { 
+                key: batch.id, 
+                style: { marginBottom: '12px' }
+              },
+                h('div', { 
+                  className: 'batch-row', 
                   style: { 
-                    marginBottom: '12px', 
+                    padding: '16px', 
                     background: '#f5f5f7', 
-                    borderRadius: '12px',
-                    overflow: 'hidden'
+                    borderRadius: '12px', 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr auto auto auto', 
+                    gap: '16px', 
+                    alignItems: 'center' 
                   }
                 },
-                  // Batch Header
+                  h('div', null,
+                    h('div', { style: { fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '4px' }}, `${batch.total_messages} messages`),
+                    h('div', { style: { fontSize: '13px', color: '#86868b' }}, new Date(batch.created_at).toLocaleString())
+                  ),
+                  h('div', { style: { fontSize: '13px', color: '#86868b' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
                   h('div', { 
-                    className: 'batch-row', 
-                    onClick: () => toggleBatch(batch.id),
                     style: { 
-                      padding: '16px', 
-                      display: 'grid', 
-                      gridTemplateColumns: '1fr auto auto auto', 
-                      gap: '16px', 
-                      alignItems: 'center',
-                      cursor: 'pointer',
-                      transition: 'background 0.2s ease'
+                      padding: '4px 12px', 
+                      borderRadius: '12px', 
+                      fontSize: '12px', 
+                      fontWeight: '600',
+                      background: batch.status === 'completed' ? '#d1f4dd' : 
+                                 batch.status === 'sending' ? '#fff4d1' : 
+                                 batch.status === 'failed' ? '#ffd1d1' : '#e5e5ea',
+                      color: batch.status === 'completed' ? '#1b5e20' :
+                            batch.status === 'sending' ? '#8b6914' :
+                            batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
                     }
-                  },
-                    h('div', null,
-                      h('div', { style: { fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '4px' }}, 
-                        `${batch.total_messages} messages`,
-                        messages && h('span', { style: { fontSize: '13px', color: '#86868b', marginLeft: '8px' }}, 
-                          `(${messageStats.sent} sent, ${messageStats.queued + messageStats.failed} remaining)`
-                        )
-                      ),
-                      h('div', { style: { fontSize: '13px', color: '#86868b' }}, new Date(batch.created_at).toLocaleString())
-                    ),
-                    h('div', { style: { fontSize: '13px', color: '#86868b' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
-                    h('div', { 
-                      style: { 
-                        padding: '4px 12px', 
-                        borderRadius: '12px', 
-                        fontSize: '12px', 
-                        fontWeight: '600',
-                        background: batch.status === 'completed' ? '#d1f4dd' : 
-                                   batch.status === 'sending' ? '#fff4d1' : 
-                                   batch.status === 'failed' ? '#ffd1d1' : '#e5e5ea',
-                        color: batch.status === 'completed' ? '#1b5e20' :
-                              batch.status === 'sending' ? '#8b6914' :
-                              batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
+                  }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1)),
+                  batch.status !== 'completed' && h('button', {
+                    onClick: () => showUnsentNumbers(batch.id),
+                    disabled: loading,
+                    style: {
+                      padding: '8px 16px',
+                      background: '#0071e3',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      opacity: loading ? 0.5 : 1
+                    }
+                  }, '📋 View Numbers')
+                ),
+                
+                // Expanded details
+                expandedBatch === batch.id && unsentNumbers && h('div', {
+                  style: {
+                    marginTop: '12px',
+                    padding: '24px',
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #d2d2d7'
+                  }
+                },
+                  h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }},
+                    h('h4', { style: { fontSize: '17px', fontWeight: '600' }}, 'Batch Details'),
+                    h('button', {
+                      onClick: () => setExpandedBatch(null),
+                      style: {
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '20px',
+                        cursor: 'pointer',
+                        color: '#86868b'
                       }
-                    }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1)),
-                    h('div', { style: { fontSize: '18px', color: '#86868b', transition: 'transform 0.2s ease', transform: isExpanded ? 'rotate(180deg)' : 'rotate(0deg)' }}, '▼')
+                    }, '×')
+                  ),
+                  
+                  h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }},
+                    h('div', { style: { padding: '12px', background: '#d1f4dd', borderRadius: '8px' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#1b5e20' }}, unsentNumbers.sent.length),
+                      h('div', { style: { fontSize: '13px', color: '#1b5e20', marginTop: '4px' }}, '✓ Sent')
+                    ),
+                    h('div', { style: { padding: '12px', background: '#fff4d1', borderRadius: '8px' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#8b6914' }}, unsentNumbers.unsent.length),
+                      h('div', { style: { fontSize: '13px', color: '#8b6914', marginTop: '4px' }}, '⏳ Remaining')
+                    )
                   ),
 
-                  // Expanded Details
-                  isExpanded && h('div', { style: { padding: '16px', background: 'white', borderTop: '1px solid #d2d2d7' }},
-                    // Action Buttons
-                    hasUnsent && h('div', { style: { marginBottom: '16px', display: 'flex', gap: '12px' }},
+                  unsentNumbers.unsent.length > 0 && h('div', null,
+                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }},
+                      h('label', { style: { fontSize: '15px', fontWeight: '600' }}, `Remaining Numbers (${unsentNumbers.unsent.length})`),
                       h('button', {
-                        onClick: (e) => { e.stopPropagation(); handleResumeBatch(batch.id); },
+                        onClick: () => copyToClipboard(unsentNumbers.unsent.join('\n')),
                         style: {
-                          padding: '10px 20px',
-                          background: '#0071e3',
+                          padding: '8px 16px',
+                          background: '#34C759',
                           color: 'white',
                           border: 'none',
                           borderRadius: '8px',
-                          fontSize: '14px',
+                          fontSize: '13px',
                           fontWeight: '600',
                           cursor: 'pointer'
                         }
-                      }, `▶ Resume (${messageStats.queued + messageStats.failed} remaining)`),
-                      messageStats.failed > 0 && h('button', {
-                        onClick: (e) => { e.stopPropagation(); handleRetryFailed(batch.id); },
-                        style: {
-                          padding: '10px 20px',
-                          background: '#FF9F0A',
-                          color: 'white',
-                          border: 'none',
-                          borderRadius: '8px',
-                          fontSize: '14px',
-                          fontWeight: '600',
-                          cursor: 'pointer'
-                        }
-                      }, `🔄 Retry Failed (${messageStats.failed})`)
+                      }, '📋 Copy All')
                     ),
-
-                    // Message List
-                    !messages ? h('div', { style: { textAlign: 'center', padding: '20px', color: '#86868b' }}, 'Loading messages...') :
-                    h('div', { style: { maxHeight: '400px', overflowY: 'auto' }},
-                      h('div', { style: { fontSize: '13px', fontWeight: '600', color: '#86868b', marginBottom: '12px', display: 'grid', gridTemplateColumns: '200px 1fr 100px', gap: '12px', padding: '8px' }},
-                        h('div', null, 'Phone Number'),
-                        h('div', null, 'Message Preview'),
-                        h('div', null, 'Status')
-                      ),
-                      messages.map(msg => h('div', {
-                        key: msg.id,
-                        style: {
-                          display: 'grid',
-                          gridTemplateColumns: '200px 1fr 100px',
-                          gap: '12px',
-                          padding: '12px 8px',
-                          borderBottom: '1px solid #f5f5f7',
-                          fontSize: '13px'
-                        }
-                      },
-                        h('div', { style: { fontFamily: 'monospace', color: '#1d1d1f', fontWeight: '500' }}, normalizePhoneNumber(msg.phone_number)),
-                        h('div', { style: { color: '#86868b', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}, msg.message),
-                        h('div', { 
-                          style: { 
-                            padding: '4px 8px',
-                            borderRadius: '8px',
-                            fontSize: '11px',
-                            fontWeight: '600',
-                            textAlign: 'center',
-                            background: msg.status === 'sent' ? '#d1f4dd' : 
-                                       msg.status === 'queued' ? '#e5e5ea' : '#ffd1d1',
-                            color: msg.status === 'sent' ? '#1b5e20' :
-                                  msg.status === 'queued' ? '#3a3a3c' : '#8b1414'
-                          }
-                        }, msg.status === 'sent' ? '✓ Sent' : msg.status === 'queued' ? 'Queued' : '✗ Failed')
-                      ))
+                    h('textarea', {
+                      readOnly: true,
+                      value: unsentNumbers.unsent.join('\n'),
+                      style: {
+                        width: '100%',
+                        height: '200px',
+                        padding: '12px',
+                        background: '#f5f5f7',
+                        border: '1px solid #d2d2d7',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
+                        resize: 'vertical'
+                      }
+                    }),
+                    h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
+                      '💡 Tip: Click "Copy All" then paste into Quick Send tab, or select specific numbers with click & drag'
                     )
-                  )
-                );
-              })
+                  ),
+
+                  unsentNumbers.unsent.length === 0 && h('div', {
+                    style: {
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#34C759',
+                      fontSize: '15px'
+                    }
+                  }, '✓ All messages sent!')
+                )
+              ))
             )
           );
         }
