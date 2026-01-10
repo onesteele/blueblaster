@@ -1,0 +1,280 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>deliveredBlue CRM</title>
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+            background: #ffffff;
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
+            min-height: 100vh;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+        }
+        
+        body::before {
+            content: '';
+            position: absolute;
+            top: 0;
+            right: 0;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle at top right, rgba(10, 132, 255, 0.5) 0%, rgba(10, 132, 255, 0.35) 15%, rgba(10, 132, 255, 0.15) 35%, transparent 60%);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        body::after {
+            content: '';
+            position: absolute;
+            bottom: 0;
+            left: 0;
+            width: 400px;
+            height: 400px;
+            background: radial-gradient(circle at bottom left, rgba(52, 199, 89, 0.5) 0%, rgba(52, 199, 89, 0.35) 15%, rgba(52, 199, 89, 0.15) 35%, transparent 60%);
+            z-index: 0;
+            pointer-events: none;
+        }
+        
+        .login-container {
+            background: white;
+            borderRadius: 24px;
+            padding: 48px 40px;
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.08);
+            border: 1px solid #d2d2d7;
+            max-width: 400px;
+            width: 90%;
+            position: relative;
+            z-index: 1;
+        }
+        
+        .logo {
+            width: 80px;
+            height: 80px;
+            border-radius: 20px;
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            margin: 0 auto 20px;
+            box-shadow: 0 8px 24px rgba(0, 122, 255, 0.35);
+        }
+        
+        .logo svg {
+            width: 44px;
+            height: 44px;
+        }
+        
+        h1 {
+            text-align: center;
+            font-size: 28px;
+            font-weight: 600;
+            margin-bottom: 6px;
+            color: #1d1d1f;
+            letter-spacing: -0.02em;
+        }
+        
+        .subtitle {
+            text-align: center;
+            font-size: 17px;
+            color: #86868b;
+            margin-bottom: 40px;
+            font-weight: 400;
+        }
+        
+        .form-group {
+            margin-bottom: 20px;
+        }
+        
+        input[type="password"] {
+            width: 100%;
+            padding: 18px;
+            border: 1px solid #d2d2d7;
+            border-radius: 12px;
+            font-size: 20px;
+            text-align: center;
+            letter-spacing: 0.6em;
+            font-weight: 500;
+            background: #f5f5f7;
+            transition: all 0.2s ease;
+        }
+        
+        input[type="password"]:focus {
+            outline: none;
+            border-color: #007AFF;
+            background: white;
+            box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1);
+        }
+        
+        input[type="password"].error {
+            border: 2px solid #FF3B30;
+            box-shadow: 0 0 0 4px rgba(255, 59, 48, 0.1);
+        }
+        
+        .error-message {
+            margin-bottom: 20px;
+            padding: 14px;
+            background: #FFEBEB;
+            border-radius: 10px;
+            color: #FF3B30;
+            font-size: 15px;
+            text-align: center;
+            font-weight: 500;
+        }
+        
+        button {
+            width: 100%;
+            padding: 18px;
+            background: linear-gradient(180deg, #007AFF 0%, #0051D5 100%);
+            color: white;
+            border: none;
+            border-radius: 12px;
+            font-size: 17px;
+            font-weight: 600;
+            cursor: pointer;
+            transition: all 0.2s ease;
+            box-shadow: 0 4px 12px rgba(0, 122, 255, 0.3);
+        }
+        
+        button:hover:not(:disabled) {
+            transform: translateY(-1px);
+            box-shadow: 0 6px 16px rgba(0, 122, 255, 0.4);
+        }
+        
+        button:active:not(:disabled) {
+            transform: translateY(0);
+        }
+        
+        button:disabled {
+            background: linear-gradient(180deg, #d2d2d7 0%, #b8b8b8 100%);
+            cursor: not-allowed;
+            opacity: 0.6;
+            box-shadow: none;
+        }
+    </style>
+</head>
+<body>
+    <div class="login-container">
+        <div class="logo">
+            <svg viewBox="0 0 24 24" fill="none" xmlns="http://www.w3.org/2000/svg">
+                <path d="M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z" fill="white"/>
+            </svg>
+        </div>
+        
+        <h1>deliveredBlue</h1>
+        <p class="subtitle">Enter passcode</p>
+        
+        <form id="loginForm">
+            <div class="form-group">
+                <input 
+                    type="password" 
+                    id="passwordInput" 
+                    placeholder="" 
+                    autocomplete="off"
+                    autofocus
+                />
+            </div>
+            
+            <div id="errorMessage" class="error-message" style="display: none;"></div>
+            
+            <button type="submit" id="submitBtn">Continue</button>
+        </form>
+    </div>
+
+    <script>
+        const SUPABASE_URL = 'https://kbewkabvddddabqkozsy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZXdrYWJ2ZGRkZGFicWtvenN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3MzQ5NjA3MDUsImV4cCI6MjA1MDUzNjcwNX0.rKaXiZpJw-8VuCsPwi7CKFz74-EsUuU_vPT_l5Qk2Oc';
+        
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        
+        const DEFAULT_PASSWORD = '4221';
+        
+        // Check if already logged in
+        const authToken = sessionStorage.getItem('imessage_crm_auth');
+        if (authToken === 'true') {
+            window.location.href = '/imessage-crm';
+        }
+        
+        const form = document.getElementById('loginForm');
+        const passwordInput = document.getElementById('passwordInput');
+        const errorMessage = document.getElementById('errorMessage');
+        const submitBtn = document.getElementById('submitBtn');
+        
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.style.display = 'block';
+            passwordInput.classList.add('error');
+            passwordInput.value = '';
+            passwordInput.focus();
+        }
+        
+        function hideError() {
+            errorMessage.style.display = 'none';
+            passwordInput.classList.remove('error');
+        }
+        
+        passwordInput.addEventListener('input', hideError);
+        
+        form.addEventListener('submit', async (e) => {
+            e.preventDefault();
+            
+            const password = passwordInput.value.trim();
+            
+            if (!password) {
+                showError('Please enter a password');
+                return;
+            }
+            
+            submitBtn.disabled = true;
+            submitBtn.textContent = 'Checking...';
+            
+            try {
+                // Check default password first
+                if (password === DEFAULT_PASSWORD) {
+                    sessionStorage.setItem('imessage_crm_auth', 'true');
+                    window.location.href = '/imessage-crm';
+                    return;
+                }
+                
+                // Check custom password from Supabase
+                const { data, error } = await supabaseClient
+                    .from('settings')
+                    .select('value')
+                    .eq('key', 'access_password')
+                    .single();
+                
+                if (!error && data && data.value === password) {
+                    sessionStorage.setItem('imessage_crm_auth', 'true');
+                    window.location.href = '/imessage-crm';
+                } else {
+                    showError('Incorrect password. Please try again.');
+                }
+            } catch (err) {
+                showError('Incorrect password. Please try again.');
+            } finally {
+                submitBtn.disabled = false;
+                submitBtn.textContent = 'Continue';
+            }
+        });
+    </script>
+</body>
+</html>
