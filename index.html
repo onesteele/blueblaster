@@ -400,6 +400,9 @@
               setSending(false);
             }
           };
+          
+          // Make it globally accessible to avoid circular reference issues when passing through props
+          window.handleSendBlast = handleSendBlast;
 
           const personalizeMessage = (template, contact) => {
             let message = template;
@@ -765,7 +768,6 @@
               h('div', { style: { display: activeTab === 'quicksend' ? 'block' : 'none' }},
                 QuickSendView({
                   normalizePhoneNumber,
-                  handleSendBlast,
                   sending
                 })
               ),
@@ -778,7 +780,6 @@
                   selectedContacts,
                   toggleContact,
                   selectAll,
-                  handleSendBlast,
                   sending
                 })
               ),
@@ -799,7 +800,7 @@
         }
 
         function QuickSendView(props) {
-          const { normalizePhoneNumber, handleSendBlast, sending } = props;
+          const { normalizePhoneNumber, sending } = props;
           const [phoneList, setPhoneList] = React.useState('');
           const [message, setMessage] = React.useState('');
           const [parsedNumbers, setParsedNumbers] = React.useState([]);
@@ -841,7 +842,7 @@
             console.log('QuickSend - Message:', message);
             console.log('QuickSend - Temp Contacts:', tempContacts);
             
-            await handleSendBlast(message, tempContacts);
+            await window.handleSendBlast(message, tempContacts);
           };
 
           return h('div', { className: 'fade-in' },
@@ -1469,7 +1470,7 @@
         }
 
         function ComposerView(props) {
-          const { messageTemplate, setMessageTemplate, contacts, selectedContacts, toggleContact, selectAll, handleSendBlast, sending } = props;
+          const { messageTemplate, setMessageTemplate, contacts, selectedContacts, toggleContact, selectAll, sending } = props;
 
           return h('div', { className: 'fade-in' },
             h('div', { style: { background: '#ffffff', borderRadius: '18px', padding: '32px', border: '1px solid #d2d2d7', marginBottom: '24px' }},
@@ -1559,7 +1560,7 @@
             ),
             
             h('button', {
-              onClick: handleSendBlast,
+              onClick: () => window.handleSendBlast(),
               disabled: sending || !messageTemplate || selectedContacts.length === 0,
               style: {
                 width: '100%',
