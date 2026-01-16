@@ -1,0 +1,2495 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>deliveredBlue CRM</title>
+    <!-- Version 2.0 - Campaigns & Templates Added -->
+    
+    <!-- Supabase -->
+    <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
+    
+    <!-- React -->
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.development.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.development.js"></script>
+    
+    <style>
+        @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
+        
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+        
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            color: #1d1d1f;
+            -webkit-font-smoothing: antialiased;
+            -moz-osx-font-smoothing: grayscale;
+            position: relative;
+            min-height: 100vh;
+        }
+        
+        body::before {
+            content: '';
+            position: fixed;
+            top: -10%;
+            right: -5%;
+            width: 600px;
+            height: 600px;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.15) 0%, rgba(0, 122, 255, 0.08) 40%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: float 20s ease-in-out infinite;
+        }
+        
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -10%;
+            left: -5%;
+            width: 500px;
+            height: 500px;
+            background: radial-gradient(circle, rgba(52, 199, 89, 0.12) 0%, rgba(52, 199, 89, 0.06) 40%, transparent 70%);
+            z-index: 0;
+            pointer-events: none;
+            animation: float 25s ease-in-out infinite reverse;
+        }
+        
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0); }
+            50% { transform: translate(20px, 20px); }
+        }
+        
+        #root { 
+            min-height: 100vh; 
+            position: relative;
+            z-index: 1;
+        }
+        
+        .loading {
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            height: 100vh;
+            font-size: 18px;
+            color: #86868b;
+            font-weight: 400;
+        }
+        
+        ::-webkit-scrollbar { width: 10px; }
+        ::-webkit-scrollbar-track { background: rgba(255, 255, 255, 0.1); }
+        ::-webkit-scrollbar-thumb { 
+            background: rgba(0, 0, 0, 0.15); 
+            border-radius: 10px;
+            border: 2px solid transparent;
+            background-clip: padding-box;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); background-clip: padding-box; }
+        
+        @keyframes fadeIn {
+          from { opacity: 0; transform: translateY(20px); }
+          to { opacity: 1; transform: translateY(0); }
+        }
+
+        .fade-in { animation: fadeIn 0.6s ease-out forwards; }
+        
+        /* Glassmorphic card base */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border: 1px solid rgba(255, 255, 255, 0.8);
+            box-shadow: 0 8px 32px rgba(0, 0, 0, 0.04), 
+                        0 1px 3px rgba(0, 0, 0, 0.02),
+                        inset 0 1px 0 rgba(255, 255, 255, 0.9);
+        }
+        
+        input, textarea, select {
+          transition: all 0.2s ease;
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+          background: rgba(255, 255, 255, 0.6);
+          backdrop-filter: blur(10px);
+        }
+        
+        input:focus, textarea:focus, select:focus {
+          outline: none;
+          border-color: #007AFF;
+          background: rgba(255, 255, 255, 0.9);
+          box-shadow: 0 0 0 4px rgba(0, 122, 255, 0.1),
+                      0 4px 12px rgba(0, 122, 255, 0.08);
+        }
+
+        button {
+          font-family: -apple-system, BlinkMacSystemFont, 'SF Pro Display', 'Inter', sans-serif;
+          transition: all 0.3s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        button:hover:not(:disabled) {
+          transform: translateY(-2px);
+          box-shadow: 0 8px 16px rgba(0, 0, 0, 0.1);
+        }
+
+        button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        button:active:not(:disabled) {
+          transform: translateY(0);
+        }
+
+        .contact-row, .batch-row { 
+          transition: all 0.15s ease;
+        }
+        
+        .contact-row:hover, .batch-row:hover {
+          background: #f5f5f7 !important;
+        }
+
+        .modal-overlay {
+          position: fixed;
+          top: 0;
+          left: 0;
+          right: 0;
+          bottom: 0;
+          background: rgba(0, 0, 0, 0.4);
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          z-index: 1000;
+          animation: fadeIn 0.2s ease-out;
+        }
+
+        .modal-content {
+          background: white;
+          border-radius: 18px;
+          max-width: 600px;
+          width: 90%;
+          max-height: 90vh;
+          overflow-y: auto;
+          animation: fadeIn 0.3s ease-out;
+        }
+
+        .tag {
+          display: inline-block;
+          padding: 4px 12px;
+          border-radius: 12px;
+          font-size: 13px;
+          font-weight: 500;
+          margin: 4px;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .tag:hover {
+          transform: translateY(-1px);
+        }
+
+        .contact-list-item {
+          padding: 12px 16px;
+          border-bottom: 1px solid #f5f5f7;
+          cursor: pointer;
+          transition: background 0.15s ease;
+        }
+
+        .contact-list-item:hover {
+          background: #f5f5f7;
+        }
+
+        .contact-list-item.selected {
+          background: #e8f0fe;
+          border-left: 3px solid #0071e3;
+        }
+
+        .checkbox {
+          width: 20px;
+          height: 20px;
+          border: 2px solid #d2d2d7;
+          border-radius: 4px;
+          display: flex;
+          align-items: center;
+          justify-content: center;
+          cursor: pointer;
+          transition: all 0.2s ease;
+        }
+
+        .checkbox.checked {
+          background: #0071e3;
+          border-color: #0071e3;
+        }
+
+        .sidebar {
+          width: 280px;
+          background: #f5f5f7;
+          border-right: 1px solid #d2d2d7;
+          overflow-y: auto;
+        }
+
+        .main-content {
+          flex: 1;
+          overflow-y: auto;
+        }
+    </style>
+</head>
+<body>
+    <div id="root">
+        <div class="loading">Loading deliveredBlue CRM...</div>
+    </div>
+    
+    <script>
+        // Auth check - redirect to login if not authenticated
+        const authToken = sessionStorage.getItem('imessage_crm_auth');
+        if (authToken !== 'true') {
+            window.location.href = 'https://blueblaster.profit-insiders.com/';
+        }
+        
+        // Logout function - globally accessible
+        window.handleLogout = function() {
+            if (confirm('Are you sure you want to sign out?')) {
+                sessionStorage.removeItem('imessage_crm_auth');
+                window.location.href = 'https://blueblaster.profit-insiders.com/';
+            }
+        };
+        
+        const SUPABASE_URL = 'https://kbewkabvddddabqkozsy.supabase.co';
+        const SUPABASE_ANON_KEY = 'eyJhbGciOiJIUzI1NiIsInR5cCI6IkpXVCJ9.eyJpc3MiOiJzdXBhYmFzZSIsInJlZiI6ImtiZXdrYWJ2ZGRkZGFicWtvenN5Iiwicm9sZSI6ImFub24iLCJpYXQiOjE3Njc0MTAzNTYsImV4cCI6MjA4Mjk4NjM1Nn0.pMIsBE9VNIiu0gf5f9ktyEXqGuieLYl_r-kyRs0POvg';
+        
+        const { useState, useEffect } = React;
+        const { createClient } = supabase;
+        const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
+        const h = React.createElement;
+
+        function App() {
+          const [activeTab, setActiveTab] = useState('contacts');
+          const [contacts, setContacts] = useState([]);
+          const [lists, setLists] = useState([]);
+          const [selectedList, setSelectedList] = useState('all');
+          const [selectedContacts, setSelectedContacts] = useState([]);
+          const [selectedContact, setSelectedContact] = useState(null);
+          const [messageTemplate, setMessageTemplate] = useState('');
+          const [batches, setBatches] = useState([]);
+          const [campaigns, setCampaigns] = useState([]);
+          const [templates, setTemplates] = useState([]);
+          const [showCampaignModal, setShowCampaignModal] = useState(false);
+          const [showTemplateModal, setShowTemplateModal] = useState(false);
+          const [editingCampaign, setEditingCampaign] = useState(null);
+          const [editingTemplate, setEditingTemplate] = useState(null);
+          const [platform, setPlatform] = useState('imessage');
+          const [sending, setSending] = useState(false);
+          const [showContactModal, setShowContactModal] = useState(false);
+          const [showListModal, setShowListModal] = useState(false);
+          const [editingContact, setEditingContact] = useState(null);
+          const [searchQuery, setSearchQuery] = useState('');
+          const [stats, setStats] = useState({ totalBatches: 0, completed: 0, sending: 0, failed: 0, cancelled: 0 });
+          const [error, setError] = useState(null);
+
+          useEffect(() => {
+            try {
+              fetchContacts();
+              fetchLists();
+              fetchBatches();
+              fetchStats();
+              fetchTemplates();
+              fetchCampaigns();
+            } catch (err) {
+              setError(err.message);
+              console.error('Init error:', err);
+            }
+          }, []);
+
+          if (error) {
+            return h('div', { style: { padding: '40px', textAlign: 'center' }},
+              h('h2', { style: { color: '#FF3B30', marginBottom: '16px' }}, 'Error'),
+              h('p', { style: { color: '#86868b' }}, error),
+              h('button', {
+                onClick: () => { setError(null); window.location.reload(); },
+                style: {
+                  marginTop: '20px',
+                  padding: '12px 24px',
+                  background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  cursor: 'pointer'
+                }
+              }, 'Reload')
+            );
+          }
+
+          const fetchContacts = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('contacts').select('*').order('created_at', { ascending: false });
+              if (!error && data) setContacts(data);
+            } catch (err) { console.error('Error:', err); }
+          };
+
+          const fetchLists = async () => {
+            const allContacts = contacts.length;
+            const tags = [...new Set(contacts.flatMap(c => c.metadata?.tags || []))];
+            setLists([
+              { id: 'all', name: 'All Contacts', count: allContacts },
+              ...tags.map(tag => ({ 
+                id: tag, 
+                name: tag, 
+                count: contacts.filter(c => c.metadata?.tags?.includes(tag)).length 
+              }))
+            ]);
+          };
+
+          useEffect(() => { fetchLists(); }, [contacts]);
+
+          const fetchBatches = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('message_batches').select('*').order('created_at', { ascending: false });
+              if (!error && data) setBatches(data);
+            } catch (err) { console.error('Error:', err); }
+          };
+
+          const fetchTemplates = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('templates').select('*').order('created_at', { ascending: false });
+              if (!error && data) setTemplates(data);
+            } catch (err) { console.error('Error fetching templates:', err); }
+          };
+
+          const fetchCampaigns = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('campaigns').select('*').order('created_at', { ascending: false });
+              if (!error && data) setCampaigns(data);
+            } catch (err) { console.error('Error fetching campaigns:', err); }
+          };
+
+          const fetchStats = async () => {
+            try {
+              const { data, error } = await supabaseClient.from('message_batches').select('status');
+              if (!error && data) {
+                setStats({
+                  totalBatches: data.length,
+                  completed: data.filter(b => b.status === 'completed').length,
+                  sending: data.filter(b => b.status === 'sending').length,
+                  failed: data.filter(b => b.status === 'failed').length,
+                  cancelled: data.filter(b => b.status === 'cancelled').length
+                });
+              }
+            } catch (err) { console.error('Error:', err); }
+          };
+
+          const handleCSVUpload = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const lines = text.split('\n');
+              const headers = lines[0].split(',').map(h => h.trim());
+              const newContacts = [];
+              
+              for (let i = 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = lines[i].split(',').map(v => v.trim());
+                const contact = {};
+                headers.forEach((header, index) => { contact[header] = values[index]; });
+                
+                if (contact.phone) {
+                  newContacts.push({
+                    phone: normalizePhoneNumber(contact.phone),
+                    first_name: contact.first_name || '',
+                    last_name: contact.last_name || '',
+                    metadata: contact
+                  });
+                }
+              }
+
+              const { error } = await supabaseClient.from('contacts').insert(newContacts);
+              if (!error) {
+                fetchContacts();
+                alert(`Successfully imported ${newContacts.length} contacts`);
+              } else {
+                alert('Error importing contacts: ' + error.message);
+              }
+            } catch (err) {
+              alert('Error reading file: ' + err.message);
+            }
+          };
+
+          const handleSendBlast = async (customMessage = null, customContacts = null) => {
+            console.log('handleSendBlast called with:', { customMessage, customContacts });
+            
+            const message = customMessage || messageTemplate;
+            const contacts = customContacts || selectedContacts;
+            
+            console.log('After defaults:', { message, contacts });
+            
+            if (!message || contacts.length === 0) {
+              alert('Please enter a message and select contacts');
+              return;
+            }
+
+            setSending(true);
+            try {
+              const { data: batch, error: batchError } = await supabaseClient
+                .from('message_batches')
+                .insert({
+                  platform: platform,
+                  message_template: message,
+                  total_messages: contacts.length,
+                  status: 'pending'
+                }).select().single();
+
+              if (batchError) throw batchError;
+
+              const messages = contacts.map(contact => ({
+                batch_id: batch.id,
+                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
+                phone_number: normalizePhoneNumber(contact.phone),
+                message: personalizeMessage(message, contact),
+                status: 'queued'
+              }));
+
+              const { error: messagesError } = await supabaseClient.from('messages').insert(messages);
+              if (messagesError) throw messagesError;
+
+              await supabaseClient.from('message_batches').update({ status: 'sending' }).eq('id', batch.id);
+
+              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
+                batchId: batch.id,
+                supabaseUrl: SUPABASE_URL,
+                supabaseKey: SUPABASE_ANON_KEY
+              }))}`;
+
+              window.location.href = shortcutUrl;
+              fetchBatches();
+              fetchStats();
+              setActiveTab('delivery');
+              
+              setTimeout(() => {
+                alert('Batch created! Opening Shortcuts app...');
+              }, 500);
+            } catch (err) {
+              alert('Error: ' + err.message);
+            } finally {
+              setSending(false);
+            }
+          };
+          
+          // Make it globally accessible to avoid circular reference issues when passing through props
+          window.handleSendBlast = handleSendBlast;
+
+          const personalizeMessage = (template, contact) => {
+            let message = template;
+            message = message.replace(/\{\{first_name\}\}/g, contact.first_name || '');
+            message = message.replace(/\{\{last_name\}\}/g, contact.last_name || '');
+            message = message.replace(/\{\{phone\}\}/g, contact.phone || '');
+            if (contact.metadata) {
+              Object.keys(contact.metadata).forEach(key => {
+                message = message.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contact.metadata[key] || '');
+              });
+            }
+            return message;
+          };
+
+          const toggleContact = (contact) => {
+            setSelectedContacts(prev => {
+              const exists = prev.find(c => c.id === contact.id);
+              return exists ? prev.filter(c => c.id !== contact.id) : [...prev, contact];
+            });
+          };
+
+          const selectAll = () => {
+            const filtered = getFilteredContacts();
+            setSelectedContacts(prev => prev.length === filtered.length ? [] : [...filtered]);
+          };
+
+          const normalizePhoneNumber = (phone) => {
+            // Remove all non-digit characters except +
+            let cleaned = phone.replace(/[^\d+]/g, '');
+            
+            // Remove any + signs that aren't at the start
+            if (cleaned.indexOf('+') > 0) {
+              cleaned = cleaned.replace(/\+/g, '');
+              cleaned = '+' + cleaned;
+            }
+            
+            // If no + sign, add it
+            if (!cleaned.startsWith('+')) {
+              cleaned = '+' + cleaned;
+            }
+            
+            // Extract just the digits after the +
+            const digits = cleaned.substring(1);
+            
+            // Return in iOS-standard format: +[country code][number] with NO SPACES
+            // This is the format iOS expects for iMessage/SMS
+            
+            // US/Canada: Ensure it starts with +1
+            if (digits.length === 10) {
+              // 10 digits = US number without country code
+              return '+1' + digits;
+            } else if (digits.length === 11 && digits.startsWith('1')) {
+              // Already has US country code
+              return '+' + digits;
+            }
+            // UK: +44
+            else if (digits.startsWith('44') && digits.length >= 11 && digits.length <= 13) {
+              return '+' + digits;
+            }
+            // Australia: +61
+            else if (digits.startsWith('61') && digits.length >= 10 && digits.length <= 11) {
+              return '+' + digits;
+            }
+            // UAE: +971
+            else if (digits.startsWith('971') && digits.length >= 11 && digits.length <= 12) {
+              return '+' + digits;
+            }
+            // Mexico: +52
+            else if (digits.startsWith('52') && digits.length >= 11 && digits.length <= 12) {
+              return '+' + digits;
+            }
+            // India: +91
+            else if (digits.startsWith('91') && digits.length >= 11 && digits.length <= 12) {
+              return '+' + digits;
+            }
+            // China: +86
+            else if (digits.startsWith('86') && digits.length >= 11 && digits.length <= 13) {
+              return '+' + digits;
+            }
+            // Japan: +81
+            else if (digits.startsWith('81') && digits.length >= 10 && digits.length <= 11) {
+              return '+' + digits;
+            }
+            // France: +33
+            else if (digits.startsWith('33') && digits.length >= 10 && digits.length <= 11) {
+              return '+' + digits;
+            }
+            // Germany: +49
+            else if (digits.startsWith('49') && digits.length >= 10 && digits.length <= 13) {
+              return '+' + digits;
+            }
+            // Spain: +34
+            else if (digits.startsWith('34') && digits.length >= 11 && digits.length <= 11) {
+              return '+' + digits;
+            }
+            // Italy: +39
+            else if (digits.startsWith('39') && digits.length >= 10 && digits.length <= 12) {
+              return '+' + digits;
+            }
+            // Brazil: +55
+            else if (digits.startsWith('55') && digits.length >= 11 && digits.length <= 13) {
+              return '+' + digits;
+            }
+            // Default: If it has + and digits, return as-is
+            else if (cleaned.startsWith('+') && digits.length >= 8) {
+              return '+' + digits;
+            }
+            // Fallback
+            else {
+              return cleaned;
+            }
+          };
+          
+          // Helper function to format phone for DISPLAY ONLY (with spaces for readability)
+          const formatPhoneForDisplay = (phone) => {
+            if (!phone) return '';
+            
+            // If already formatted with spaces, return as-is
+            if (phone.includes(' ')) return phone;
+            
+            // Remove +
+            const digits = phone.replace('+', '');
+            
+            // Format US/Canada
+            if (digits.length === 11 && digits.startsWith('1')) {
+              return `+1 (${digits.substring(1, 4)}) ${digits.substring(4, 7)}-${digits.substring(7)}`;
+            }
+            // Format 10-digit US
+            else if (digits.length === 10) {
+              return `+1 (${digits.substring(0, 3)}) ${digits.substring(3, 6)}-${digits.substring(6)}`;
+            }
+            // Default: just add + back
+            else {
+              return '+' + digits;
+            }
+          };
+          
+          // Format phone for sending (with spaces for international compatibility)
+          const formatPhoneForSending = (phone) => {
+            if (!phone) return '';
+            
+            // Remove all spaces first
+            const cleaned = phone.replace(/\s/g, '');
+            
+            // Extract digits
+            const digits = cleaned.replace(/[^\d]/g, '');
+            
+            // Format with spaces based on country code
+            // US/Canada: +1 XXX XXX XXXX
+            if (digits.length === 11 && digits.startsWith('1')) {
+              return `+1 ${digits.substring(1, 4)} ${digits.substring(4, 7)} ${digits.substring(7)}`;
+            }
+            else if (digits.length === 10) {
+              return `+1 ${digits.substring(0, 3)} ${digits.substring(3, 6)} ${digits.substring(6)}`;
+            }
+            // UK: +44 XXXX XXX XXX
+            else if (digits.startsWith('44') && digits.length >= 12) {
+              return `+44 ${digits.substring(2, 6)} ${digits.substring(6, 9)} ${digits.substring(9)}`;
+            }
+            // Australia: +61 XXX XXX XXX
+            else if (digits.startsWith('61') && digits.length >= 11) {
+              return `+61 ${digits.substring(2, 5)} ${digits.substring(5, 8)} ${digits.substring(8)}`;
+            }
+            // UAE: +971 XX XXX XXXX
+            else if (digits.startsWith('971') && digits.length >= 12) {
+              return `+971 ${digits.substring(3, 5)} ${digits.substring(5, 8)} ${digits.substring(8)}`;
+            }
+            // Mexico: +52 XXX XXX XXXX
+            else if (digits.startsWith('52') && digits.length >= 12) {
+              return `+52 ${digits.substring(2, 5)} ${digits.substring(5, 8)} ${digits.substring(8)}`;
+            }
+            // India: +91 XXXXX XXXXX
+            else if (digits.startsWith('91') && digits.length >= 12) {
+              return `+91 ${digits.substring(2, 7)} ${digits.substring(7)}`;
+            }
+            // China: +86 XXX XXXX XXXX
+            else if (digits.startsWith('86') && digits.length >= 11) {
+              return `+86 ${digits.substring(2, 5)} ${digits.substring(5, 9)} ${digits.substring(9)}`;
+            }
+            // Japan: +81 XX XXXX XXXX
+            else if (digits.startsWith('81') && digits.length >= 11) {
+              return `+81 ${digits.substring(2, 4)} ${digits.substring(4, 8)} ${digits.substring(8)}`;
+            }
+            // France: +33 X XX XX XX XX
+            else if (digits.startsWith('33') && digits.length >= 11) {
+              return `+33 ${digits.substring(2, 3)} ${digits.substring(3, 5)} ${digits.substring(5, 7)} ${digits.substring(7, 9)} ${digits.substring(9)}`;
+            }
+            // Germany: +49 XXX XXXXXXX
+            else if (digits.startsWith('49') && digits.length >= 11) {
+              return `+49 ${digits.substring(2, 5)} ${digits.substring(5)}`;
+            }
+            // Spain: +34 XXX XX XX XX
+            else if (digits.startsWith('34') && digits.length >= 11) {
+              return `+34 ${digits.substring(2, 5)} ${digits.substring(5, 7)} ${digits.substring(7, 9)} ${digits.substring(9)}`;
+            }
+            // Italy: +39 XXX XXX XXXX
+            else if (digits.startsWith('39') && digits.length >= 12) {
+              return `+39 ${digits.substring(2, 5)} ${digits.substring(5, 8)} ${digits.substring(8)}`;
+            }
+            // Brazil: +55 XX XXXXX XXXX
+            else if (digits.startsWith('55') && digits.length >= 12) {
+              return `+55 ${digits.substring(2, 4)} ${digits.substring(4, 9)} ${digits.substring(9)}`;
+            }
+            // Default: Add spaces every 3-4 digits
+            else if (digits.length > 10) {
+              // Assume first 1-3 digits are country code
+              let countryCode = digits.substring(0, 2);
+              let rest = digits.substring(2);
+              
+              // Add spaces every 3 digits in the rest
+              let formatted = '+' + countryCode;
+              for (let i = 0; i < rest.length; i += 3) {
+                formatted += ' ' + rest.substring(i, i + 3);
+              }
+              return formatted.trim();
+            }
+            
+            // Fallback: return with + and no spaces
+            return '+' + digits;
+          };
+
+          const getFilteredContacts = () => {
+            let filtered = contacts;
+            
+            if (selectedList !== 'all') {
+              filtered = filtered.filter(c => c.metadata?.tags?.includes(selectedList));
+            }
+            
+            if (searchQuery) {
+              filtered = filtered.filter(c => 
+                c.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                c.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+                c.phone?.includes(searchQuery)
+              );
+            }
+            
+            return filtered;
+          };
+
+          const saveContact = async (contactData) => {
+            try {
+              // Normalize phone number before saving
+              const normalizedData = {
+                ...contactData,
+                phone: normalizePhoneNumber(contactData.phone)
+              };
+              
+              if (editingContact) {
+                const { error } = await supabaseClient
+                  .from('contacts')
+                  .update(normalizedData)
+                  .eq('id', editingContact.id);
+                if (error) throw error;
+              } else {
+                const { error } = await supabaseClient
+                  .from('contacts')
+                  .insert([normalizedData]);
+                if (error) throw error;
+              }
+              fetchContacts();
+              setShowContactModal(false);
+              setEditingContact(null);
+            } catch (err) {
+              alert('Error saving contact: ' + err.message);
+            }
+          };
+
+          const deleteContact = async (contactId) => {
+            if (!confirm('Are you sure you want to delete this contact?')) return;
+            try {
+              const { error } = await supabaseClient
+                .from('contacts')
+                .delete()
+                .eq('id', contactId);
+              if (error) throw error;
+              fetchContacts();
+              setSelectedContact(null);
+            } catch (err) {
+              alert('Error deleting contact: ' + err.message);
+            }
+          };
+
+          // Re-normalize all phone numbers in the database (run once to fix existing data)
+          const reNormalizeAllPhoneNumbers = async () => {
+            if (!confirm('This will update ALL phone numbers in your database with proper spacing for iMessage. Continue?')) {
+              return;
+            }
+            
+            try {
+              const { data: allContacts, error: fetchError } = await supabaseClient
+                .from('contacts')
+                .select('*');
+              
+              if (fetchError) throw fetchError;
+              
+              let updated = 0;
+              for (const contact of allContacts) {
+                const normalizedPhone = normalizePhoneNumber(contact.phone);
+                
+                if (normalizedPhone !== contact.phone) {
+                  const { error: updateError } = await supabaseClient
+                    .from('contacts')
+                    .update({ phone: normalizedPhone })
+                    .eq('id', contact.id);
+                  
+                  if (!updateError) updated++;
+                }
+              }
+              
+              alert(`✓ Successfully updated ${updated} phone numbers with proper iMessage formatting!`);
+              fetchContacts(); // Refresh the list
+            } catch (err) {
+              alert('Error updating phone numbers: ' + err.message);
+              console.error('Error:', err);
+            }
+          };
+
+          // Make it globally accessible
+          window.reNormalizeAllPhoneNumbers = reNormalizeAllPhoneNumbers;
+
+          const addTagToContact = async (contactId, tag) => {
+            const contact = contacts.find(c => c.id === contactId);
+            const currentTags = contact.metadata?.tags || [];
+            if (currentTags.includes(tag)) return;
+            
+            const newMetadata = { 
+              ...contact.metadata, 
+              tags: [...currentTags, tag] 
+            };
+            
+            try {
+              const { error } = await supabaseClient
+                .from('contacts')
+                .update({ metadata: newMetadata })
+                .eq('id', contactId);
+              if (error) throw error;
+              fetchContacts();
+            } catch (err) {
+              alert('Error adding tag: ' + err.message);
+            }
+          };
+
+          const removeTagFromContact = async (contactId, tag) => {
+            const contact = contacts.find(c => c.id === contactId);
+            const currentTags = contact.metadata?.tags || [];
+            const newMetadata = { 
+              ...contact.metadata, 
+              tags: currentTags.filter(t => t !== tag) 
+            };
+            
+            try {
+              const { error } = await supabaseClient
+                .from('contacts')
+                .update({ metadata: newMetadata })
+                .eq('id', contactId);
+              if (error) throw error;
+              fetchContacts();
+            } catch (err) {
+              alert('Error removing tag: ' + err.message);
+            }
+          };
+
+          const filteredContacts = getFilteredContacts();
+
+          return h('div', { style: { minHeight: '100vh', background: 'transparent', position: 'relative', zIndex: 1 }},
+            h('div', { style: { maxWidth: '1400px', margin: '0 auto', padding: '60px 22px', position: 'relative', zIndex: 1 }},
+              // Header
+              h('div', { style: { marginBottom: '60px', animation: 'fadeIn 0.6s ease-out' }},
+                h('div', { style: { display: 'flex', alignItems: 'center', justifyContent: 'space-between', marginBottom: '12px' }},
+                  h('div', { style: { display: 'flex', alignItems: 'center', gap: '20px' }},
+                    h('div', { 
+                      style: { 
+                        width: '64px', 
+                        height: '64px', 
+                        borderRadius: '18px', 
+                        background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)', 
+                        display: 'flex', 
+                        alignItems: 'center', 
+                        justifyContent: 'center', 
+                        boxShadow: '0 8px 24px rgba(0, 122, 255, 0.35)' 
+                      }
+                    }, 
+                      h('svg', {
+                        width: '32',
+                        height: '32',
+                        viewBox: '0 0 24 24',
+                        fill: 'none',
+                        xmlns: 'http://www.w3.org/2000/svg'
+                      },
+                        h('path', {
+                          d: 'M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z',
+                          fill: 'white'
+                        })
+                      )
+                    ),
+                    h('div', null,
+                      h('h1', { style: { fontSize: '42px', fontWeight: '600', letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '2px' }}, 'deliveredBlue'),
+                      h('p', { style: { fontSize: '17px', color: '#86868b', fontWeight: '500', letterSpacing: '-0.01em' }}, 'CRM')
+                    )
+                  ),
+                  h('button', {
+                    onClick: () => window.handleLogout(),
+                    style: {
+                      padding: '12px 24px',
+                      background: 'linear-gradient(180deg, #f5f5f7 0%, #e8e8ed 100%)',
+                      border: '1px solid #d2d2d7',
+                      borderRadius: '12px',
+                      color: '#1d1d1f',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      transition: 'all 0.2s ease',
+                      boxShadow: '0 4px 12px rgba(0, 122, 255, 0.25)'
+                    }
+                  }, '🔒 Sign Out')
+                ),
+                h('p', { style: { fontSize: '19px', lineHeight: '1.4', color: '#86868b', fontWeight: '400', letterSpacing: '-0.01em', marginTop: '8px' }}, 'Send personalized messages at scale.')
+              ),
+              
+              // Tabs
+              h('div', { style: { marginBottom: '48px', borderBottom: '1px solid #d2d2d7' }},
+                h('div', { style: { display: 'flex', gap: '32px' }},
+                  [
+                    { id: 'contacts', label: 'Contacts' },
+                    { id: 'campaigns', label: 'Campaigns' },
+                    { id: 'templates', label: 'Templates' },
+                    { id: 'quicksend', label: 'Quick Send' },
+                    { id: 'composer', label: 'Compose' },
+                    { id: 'delivery', label: 'Activity' }
+                  ].map(tab => h('button', {
+                    key: tab.id,
+                    onClick: () => setActiveTab(tab.id),
+                    style: {
+                      padding: '12px 0',
+                      background: 'transparent',
+                      border: 'none',
+                      borderBottom: activeTab === tab.id ? '2px solid #1d1d1f' : '2px solid transparent',
+                      color: activeTab === tab.id ? '#1d1d1f' : '#86868b',
+                      cursor: 'pointer',
+                      fontSize: '17px',
+                      fontWeight: activeTab === tab.id ? '600' : '400',
+                      transition: 'all 0.2s ease',
+                      marginBottom: '-1px'
+                    }
+                  }, tab.label))
+                )
+              ),
+              
+              // Bulk Actions Toolbar
+              selectedContacts.length > 0 && activeTab === 'contacts' && h('div', {
+                style: {
+                  background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                  borderRadius: '16px',
+                  padding: '16px 24px',
+                  marginBottom: '24px',
+                  display: 'flex',
+                  alignItems: 'center',
+                  justifyContent: 'space-between',
+                  animation: 'fadeIn 0.3s ease-out',
+                  boxShadow: '0 4px 20px rgba(0, 113, 227, 0.25)'
+                }
+              },
+                h('div', { style: { color: 'white', fontSize: '15px', fontWeight: '600' }}, 
+                  `${selectedContacts.length} selected`
+                ),
+                h('div', { style: { display: 'flex', gap: '12px' }},
+                  h('button', {
+                    onClick: () => setActiveTab('composer'),
+                    style: {
+                      padding: '10px 20px',
+                      background: 'white',
+                      color: '#0071e3',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }
+                  },
+                    h('span', { style: { fontSize: '16px' }}, '💬'),
+                    'Send Message'
+                  ),
+                  h('button', {
+                    onClick: () => {
+                      const groupName = prompt('Enter group name:');
+                      if (groupName) {
+                        selectedContacts.forEach(contact => {
+                          addTagToContact(contact.id, groupName);
+                        });
+                        alert(`Added ${selectedContacts.length} contacts to "${groupName}"`);
+                        setSelectedContacts([]);
+                      }
+                    },
+                    style: {
+                      padding: '10px 20px',
+                      background: 'rgba(255, 255, 255, 0.2)',
+                      color: 'white',
+                      border: '1px solid rgba(255, 255, 255, 0.3)',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }
+                  },
+                    h('span', { style: { fontSize: '16px' }}, '📁'),
+                    'Create Group'
+                  ),
+                  h('button', {
+                    onClick: async () => {
+                      if (!confirm(`Delete ${selectedContacts.length} contact(s)?`)) return;
+                      try {
+                        for (const contact of selectedContacts) {
+                          await supabaseClient.from('contacts').delete().eq('id', contact.id);
+                        }
+                        alert(`Deleted ${selectedContacts.length} contact(s)`);
+                        setSelectedContacts([]);
+                        fetchContacts();
+                      } catch (err) {
+                        alert('Error deleting contacts: ' + err.message);
+                      }
+                    },
+                    style: {
+                      padding: '10px 20px',
+                      background: '#FF3B30',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      fontWeight: '600',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      alignItems: 'center',
+                      gap: '8px'
+                    }
+                  },
+                    h('span', { style: { fontSize: '16px' }}, '🗑️'),
+                    'Delete'
+                  )
+                )
+              ),
+              
+              // Content - Always render all tabs but hide inactive ones
+              h('div', { style: { display: activeTab === 'contacts' ? 'block' : 'none' }},
+                ContactsView({
+                  contacts: filteredContacts,
+                  lists,
+                  selectedList,
+                  setSelectedList,
+                  selectedContacts,
+                  toggleContact,
+                  selectAll,
+                  selectedContact,
+                  setSelectedContact,
+                  setShowContactModal,
+                  setEditingContact,
+                  deleteContact,
+                  addTagToContact,
+                  removeTagFromContact,
+                  searchQuery,
+                  setSearchQuery,
+                  handleCSVUpload
+                })
+              ),
+              
+              h('div', { style: { display: activeTab === 'campaigns' ? 'block' : 'none' }},
+                CampaignsView({
+                  campaigns,
+                  setCampaigns,
+                  contacts,
+                  templates,
+                  showCampaignModal,
+                  setShowCampaignModal,
+                  editingCampaign,
+                  setEditingCampaign
+                })
+              ),
+              
+              h('div', { style: { display: activeTab === 'templates' ? 'block' : 'none' }},
+                TemplatesView({
+                  templates,
+                  setTemplates,
+                  showTemplateModal,
+                  setShowTemplateModal,
+                  editingTemplate,
+                  setEditingTemplate
+                })
+              ),
+              
+              h('div', { style: { display: activeTab === 'quicksend' ? 'block' : 'none' }},
+                QuickSendView({
+                  normalizePhoneNumber,
+                  sending
+                })
+              ),
+              
+              h('div', { style: { display: activeTab === 'composer' ? 'block' : 'none' }},
+                ComposerView({
+                  messageTemplate,
+                  setMessageTemplate,
+                  contacts: filteredContacts,
+                  selectedContacts,
+                  toggleContact,
+                  selectAll,
+                  sending
+                })
+              ),
+              
+              h('div', { style: { display: activeTab === 'delivery' ? 'block' : 'none' }},
+                DeliveryView({ batches, stats })
+              )
+            ),
+            
+            // Contact Modal - Always render
+            ContactModal({
+              contact: editingContact,
+              show: showContactModal,
+              onClose: () => { setShowContactModal(false); setEditingContact(null); },
+              onSave: saveContact
+            })
+          );
+        }
+
+        function CampaignsView(props) {
+          const { campaigns, setCampaigns, contacts, templates } = props;
+          const [showNewCampaign, setShowNewCampaign] = React.useState(false);
+          const [campaignForm, setCampaignForm] = React.useState({
+            name: '',
+            message: '',
+            segment: 'all',
+            schedule: 'now',
+            scheduleDate: '',
+            scheduleTime: '',
+            frequency: 'once',
+            status: 'draft'
+          });
+
+          const handleCreateCampaign = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('campaigns')
+                .insert([{
+                  name: campaignForm.name,
+                  message: campaignForm.message,
+                  segment: campaignForm.segment,
+                  schedule: campaignForm.schedule,
+                  schedule_date: campaignForm.scheduleDate || null,
+                  schedule_time: campaignForm.scheduleTime || null,
+                  frequency: campaignForm.frequency,
+                  status: 'draft',
+                  sent_count: 0,
+                  total_recipients: contacts.length
+                }])
+                .select();
+
+              if (error) throw error;
+              
+              if (data) {
+                setCampaigns([...campaigns, data[0]]);
+                setShowNewCampaign(false);
+                setCampaignForm({ name: '', message: '', segment: 'all', schedule: 'now', scheduleDate: '', scheduleTime: '', frequency: 'once', status: 'draft' });
+                alert('✓ Campaign created!');
+              }
+            } catch (err) {
+              alert('Error creating campaign: ' + err.message);
+              console.error('Error:', err);
+            }
+          };
+
+          const handleLaunchCampaign = (campaign) => {
+            // Launch campaign logic
+            alert(`Launching campaign: ${campaign.name}`);
+          };
+
+          return h('div', { className: 'fade-in' },
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }},
+                h('div', null,
+                  h('h2', { style: { fontSize: '24px', fontWeight: '600', marginBottom: '8px' }}, 'Campaigns'),
+                  h('p', { style: { fontSize: '15px', color: '#86868b' }}, 'Automate your messaging with scheduled campaigns')
+                ),
+                h('button', {
+                  onClick: () => setShowNewCampaign(!showNewCampaign),
+                  style: {
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0, 122, 255, 0.25)'
+                  }
+                }, showNewCampaign ? 'Cancel' : '+ New Campaign')
+              )
+            ),
+
+            showNewCampaign && h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('h3', { style: { fontSize: '20px', fontWeight: '600', marginBottom: '24px' }}, 'Create Campaign'),
+              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '20px', marginBottom: '20px' }},
+                h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Campaign Name'),
+                  h('input', {
+                    type: 'text',
+                    value: campaignForm.name,
+                    onChange: (e) => setCampaignForm({...campaignForm, name: e.target.value}),
+                    placeholder: 'Summer Sale 2024',
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  })
+                ),
+                h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Target Segment'),
+                  h('select', {
+                    value: campaignForm.segment,
+                    onChange: (e) => setCampaignForm({...campaignForm, segment: e.target.value}),
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  },
+                    h('option', { value: 'all' }, 'All Contacts'),
+                    h('option', { value: 'active' }, 'Active Customers'),
+                    h('option', { value: 'inactive' }, 'Inactive (30+ days)')
+                  )
+                )
+              ),
+              h('div', { style: { marginBottom: '20px' }},
+                h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Message'),
+                h('textarea', {
+                  value: campaignForm.message,
+                  onChange: (e) => setCampaignForm({...campaignForm, message: e.target.value}),
+                  placeholder: 'Your campaign message...',
+                  rows: 4,
+                  style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px', resize: 'vertical' }
+                })
+              ),
+              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '20px', marginBottom: '24px' }},
+                h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Schedule'),
+                  h('select', {
+                    value: campaignForm.schedule,
+                    onChange: (e) => setCampaignForm({...campaignForm, schedule: e.target.value}),
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  },
+                    h('option', { value: 'now' }, 'Send Now'),
+                    h('option', { value: 'scheduled' }, 'Schedule')
+                  )
+                ),
+                campaignForm.schedule === 'scheduled' && h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Date'),
+                  h('input', {
+                    type: 'date',
+                    value: campaignForm.scheduleDate,
+                    onChange: (e) => setCampaignForm({...campaignForm, scheduleDate: e.target.value}),
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  })
+                ),
+                campaignForm.schedule === 'scheduled' && h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Time'),
+                  h('input', {
+                    type: 'time',
+                    value: campaignForm.scheduleTime,
+                    onChange: (e) => setCampaignForm({...campaignForm, scheduleTime: e.target.value}),
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  })
+                )
+              ),
+              h('button', {
+                onClick: handleCreateCampaign,
+                disabled: !campaignForm.name || !campaignForm.message,
+                style: {
+                  width: '100%',
+                  padding: '16px',
+                  background: campaignForm.name && campaignForm.message ? 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)' : '#d2d2d7',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '17px',
+                  fontWeight: '600',
+                  cursor: campaignForm.name && campaignForm.message ? 'pointer' : 'not-allowed'
+                }
+              }, 'Create Campaign')
+            ),
+
+            h('div', { style: { display: 'grid', gap: '16px' }},
+              campaigns.length === 0 ? h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '60px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', textAlign: 'center' }},
+                h('p', { style: { fontSize: '17px', color: '#86868b', marginBottom: '8px' }}, '📅 No campaigns yet'),
+                h('p', { style: { fontSize: '15px', color: '#86868b' }}, 'Create your first automated campaign')
+              ) :
+              campaigns.map(campaign => h('div', {
+                key: campaign.id,
+                style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '24px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)' }
+              },
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'start' }},
+                  h('div', null,
+                    h('h3', { style: { fontSize: '18px', fontWeight: '600', marginBottom: '4px' }}, campaign.name),
+                    h('p', { style: { fontSize: '14px', color: '#86868b', marginBottom: '12px' }}, `${campaign.total_recipients} recipients • ${campaign.frequency}`),
+                    h('p', { style: { fontSize: '15px', color: '#1d1d1f' }}, campaign.message.substring(0, 100) + '...')
+                  ),
+                  h('div', { style: { display: 'flex', gap: '8px' }},
+                    h('button', {
+                      onClick: () => handleLaunchCampaign(campaign),
+                      style: {
+                        padding: '8px 16px',
+                        background: 'linear-gradient(135deg, #34C759 0%, #30A14E 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }
+                    }, '▶ Launch')
+                  )
+                )
+              ))
+            )
+          );
+        }
+
+        function TemplatesView(props) {
+          const { templates, setTemplates } = props;
+          const [showNewTemplate, setShowNewTemplate] = React.useState(false);
+          const [templateForm, setTemplateForm] = React.useState({ name: '', message: '', category: 'general' });
+
+          const handleSaveTemplate = async () => {
+            try {
+              const { data, error } = await supabaseClient
+                .from('templates')
+                .insert([{
+                  name: templateForm.name,
+                  message: templateForm.message,
+                  category: templateForm.category,
+                  used_count: 0
+                }])
+                .select();
+
+              if (error) throw error;
+              
+              if (data) {
+                setTemplates([...templates, data[0]]);
+                setShowNewTemplate(false);
+                setTemplateForm({ name: '', message: '', category: 'general' });
+                alert('✓ Template saved!');
+              }
+            } catch (err) {
+              alert('Error saving template: ' + err.message);
+              console.error('Error:', err);
+            }
+          };
+
+          const handleUseTemplate = (template) => {
+            navigator.clipboard.writeText(template.message);
+            alert('✓ Template copied to clipboard!');
+          };
+
+          return h('div', { className: 'fade-in' },
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center' }},
+                h('div', null,
+                  h('h2', { style: { fontSize: '24px', fontWeight: '600', marginBottom: '8px' }}, 'Message Templates'),
+                  h('p', { style: { fontSize: '15px', color: '#86868b' }}, 'Save and reuse your best messages')
+                ),
+                h('button', {
+                  onClick: () => setShowNewTemplate(!showNewTemplate),
+                  style: {
+                    padding: '12px 24px',
+                    background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    boxShadow: '0 4px 12px rgba(0, 122, 255, 0.25)'
+                  }
+                }, showNewTemplate ? 'Cancel' : '+ New Template')
+              )
+            ),
+
+            showNewTemplate && h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('h3', { style: { fontSize: '20px', fontWeight: '600', marginBottom: '24px' }}, 'Create Template'),
+              h('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '20px', marginBottom: '20px' }},
+                h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Template Name'),
+                  h('input', {
+                    type: 'text',
+                    value: templateForm.name,
+                    onChange: (e) => setTemplateForm({...templateForm, name: e.target.value}),
+                    placeholder: 'Welcome Message',
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  })
+                ),
+                h('div', null,
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Category'),
+                  h('select', {
+                    value: templateForm.category,
+                    onChange: (e) => setTemplateForm({...templateForm, category: e.target.value}),
+                    style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px' }
+                  },
+                    h('option', { value: 'general' }, 'General'),
+                    h('option', { value: 'welcome' }, 'Welcome'),
+                    h('option', { value: 'followup' }, 'Follow-up'),
+                    h('option', { value: 'promotion' }, 'Promotion')
+                  )
+                )
+              ),
+              h('div', { style: { marginBottom: '20px' }},
+                h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Message'),
+                h('textarea', {
+                  value: templateForm.message,
+                  onChange: (e) => setTemplateForm({...templateForm, message: e.target.value}),
+                  placeholder: 'Hi {{first_name}}, welcome to...',
+                  rows: 6,
+                  style: { width: '100%', padding: '12px', borderRadius: '10px', border: '1px solid #d2d2d7', fontSize: '15px', resize: 'vertical' }
+                }),
+                h('p', { style: { marginTop: '8px', fontSize: '13px', color: '#86868b' }}, 'Use {{variable}} for personalization')
+              ),
+              h('button', {
+                onClick: handleSaveTemplate,
+                disabled: !templateForm.name || !templateForm.message,
+                style: {
+                  width: '100%',
+                  padding: '16px',
+                  background: templateForm.name && templateForm.message ? 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)' : '#d2d2d7',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '12px',
+                  fontSize: '17px',
+                  fontWeight: '600',
+                  cursor: templateForm.name && templateForm.message ? 'pointer' : 'not-allowed'
+                }
+              }, 'Save Template')
+            ),
+
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: '16px' }},
+              templates.length === 0 ? h('div', { style: { gridColumn: '1 / -1', background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '60px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', textAlign: 'center' }},
+                h('p', { style: { fontSize: '17px', color: '#86868b', marginBottom: '8px' }}, '📝 No templates yet'),
+                h('p', { style: { fontSize: '15px', color: '#86868b' }}, 'Create templates to speed up your workflow')
+              ) :
+              templates.map(template => h('div', {
+                key: template.id,
+                style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '16px', padding: '20px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', transition: 'transform 0.2s ease', cursor: 'pointer' }
+              },
+                h('div', { style: { marginBottom: '12px' }},
+                  h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }},
+                    h('h3', { style: { fontSize: '16px', fontWeight: '600' }}, template.name),
+                    h('span', { style: { fontSize: '11px', padding: '4px 8px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF', borderRadius: '6px', fontWeight: '600' }}, template.category)
+                  ),
+                  h('p', { style: { fontSize: '14px', color: '#1d1d1f', lineHeight: '1.5' }}, template.message.substring(0, 120) + (template.message.length > 120 ? '...' : ''))
+                ),
+                h('button', {
+                  onClick: () => handleUseTemplate(template),
+                  style: {
+                    width: '100%',
+                    padding: '10px',
+                    background: 'linear-gradient(180deg, rgba(245, 247, 250, 0.5) 0%, rgba(232, 236, 241, 0.5) 100%)',
+                    border: '1px solid rgba(0, 0, 0, 0.1)',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    color: '#1d1d1f',
+                    cursor: 'pointer'
+                  }
+                }, '📋 Copy Template')
+              ))
+            )
+          );
+        }
+
+        function QuickSendView(props) {
+          const { normalizePhoneNumber, sending } = props;
+          const [phoneList, setPhoneList] = React.useState('');
+          const [message, setMessage] = React.useState('');
+          const [parsedNumbers, setParsedNumbers] = React.useState([]);
+
+          const parsePhoneNumbers = () => {
+            if (!phoneList.trim()) {
+              setParsedNumbers([]);
+              return;
+            }
+
+            const numbers = phoneList
+              .split(/[\n,;\s]+/)
+              .map(num => num.trim())
+              .filter(num => num.length > 0)
+              .map(num => normalizePhoneNumber(num));
+
+            const unique = [...new Set(numbers)];
+            setParsedNumbers(unique);
+          };
+
+          React.useEffect(() => {
+            parsePhoneNumbers();
+          }, [phoneList]);
+
+          const handleQuickSend = async () => {
+            if (!message || parsedNumbers.length === 0) {
+              alert('Please enter a message and at least one phone number');
+              return;
+            }
+
+            const tempContacts = parsedNumbers.map((phone, index) => ({
+              id: `temp_${Date.now()}_${index}`,
+              phone: phone,
+              first_name: '',
+              last_name: '',
+              metadata: {}
+            }));
+
+            console.log('QuickSend - Message:', message);
+            console.log('QuickSend - Temp Contacts:', tempContacts);
+            
+            await window.handleSendBlast(message, tempContacts);
+          };
+
+          return h('div', { className: 'fade-in' },
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('h2', { style: { fontSize: '24px', fontWeight: '700', marginBottom: '8px' }}, 'Quick Send'),
+              h('p', { style: { fontSize: '15px', color: '#86868b', marginBottom: '24px' }}, 'Paste a list of phone numbers and send a message instantly.')
+            ),
+
+            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px', marginBottom: '24px' }},
+              h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)' }},
+                h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Phone Numbers'),
+                h('textarea', {
+                  value: phoneList,
+                  onChange: (e) => setPhoneList(e.target.value),
+                  placeholder: 'Paste phone numbers here...\n\n5551234567\n+1-555-234-5678\n(555) 345-6789',
+                  rows: 12,
+                  style: {
+                    width: '100%',
+                    padding: '16px',
+                    background: 'rgba(245, 247, 250, 0.5)',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    color: '#1d1d1f',
+                    fontSize: '15px',
+                    lineHeight: '1.5',
+                    resize: 'vertical',
+                    fontFamily: 'monospace'
+                  }
+                }),
+                h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
+                  parsedNumbers.length > 0 
+                    ? `✓ ${parsedNumbers.length} number${parsedNumbers.length === 1 ? '' : 's'} detected` 
+                    : 'Separate with commas, spaces, or new lines'
+                ),
+                parsedNumbers.length > 0 && h('div', { style: { marginTop: '16px', padding: '12px', background: 'rgba(245, 247, 250, 0.5)', borderRadius: '8px', maxHeight: '150px', overflowY: 'auto' }},
+                  h('div', { style: { fontSize: '13px', color: '#86868b', marginBottom: '8px', fontWeight: '600' }}, 'Formatted Numbers:'),
+                  parsedNumbers.map((num, i) => h('div', { key: i, style: { fontSize: '13px', color: '#1d1d1f', fontFamily: 'monospace' }}, num))
+                )
+              ),
+
+              h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)' }},
+                h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Message'),
+                h('textarea', {
+                  value: message,
+                  onChange: (e) => setMessage(e.target.value),
+                  placeholder: 'Type your message here...',
+                  rows: 12,
+                  style: {
+                    width: '100%',
+                    padding: '16px',
+                    background: 'rgba(245, 247, 250, 0.5)',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    color: '#1d1d1f',
+                    fontSize: '15px',
+                    lineHeight: '1.5',
+                    resize: 'vertical',
+                    fontFamily: 'inherit'
+                  }
+                }),
+                h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
+                  `${message.length} characters`
+                )
+              )
+            ),
+
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)' }},
+              h('button', {
+                onClick: handleQuickSend,
+                disabled: sending || !message || parsedNumbers.length === 0,
+                style: {
+                  width: '100%',
+                  padding: '16px',
+                  background: (sending || !message || parsedNumbers.length === 0) ? '#d2d2d7' : '#0071e3',
+                  border: 'none',
+                  borderRadius: '12px',
+                  color: '#ffffff',
+                  fontSize: '17px',
+                  fontWeight: '600',
+                  cursor: (sending || !message || parsedNumbers.length === 0) ? 'not-allowed' : 'pointer',
+                  opacity: (sending || !message || parsedNumbers.length === 0) ? 0.5 : 1,
+                  transition: 'all 0.2s ease'
+                }
+              }, sending ? 'Sending...' : `Send to ${parsedNumbers.length} ${parsedNumbers.length === 1 ? 'number' : 'numbers'}`)
+            )
+          );
+        }
+
+        function ContactsView(props) {
+          const {
+            contacts, lists, selectedList, setSelectedList, selectedContacts,
+            toggleContact, selectAll, selectedContact, setSelectedContact,
+            setShowContactModal, setEditingContact, deleteContact,
+            addTagToContact, removeTagFromContact, searchQuery, setSearchQuery,
+            handleCSVUpload
+          } = props;
+
+          return h('div', { style: { display: 'flex', gap: '24px', minHeight: '600px' }},
+            // Sidebar
+            h('div', { className: 'sidebar', style: { width: '280px', background: 'rgba(245, 247, 250, 0.5)', borderRadius: '18px', padding: '24px', border: '1px solid #d2d2d7', flexShrink: 0 }},
+              h('div', { style: { marginBottom: '24px' }},
+                h('button', {
+                  onClick: () => { setEditingContact(null); setShowContactModal(true); },
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    marginBottom: '12px'
+                  }
+                }, '+ New Contact'),
+                h('label', {
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    background: 'white',
+                    color: '#1d1d1f',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    display: 'block',
+                    textAlign: 'center',
+                    marginBottom: '12px'
+                  }
+                }, 
+                  'Import CSV',
+                  h('input', { type: 'file', accept: '.csv', onChange: handleCSVUpload, style: { display: 'none' }})
+                ),
+                h('button', {
+                  onClick: () => {
+                    const numbers = contacts.map(c => formatPhoneForSending(c.phone)).join('\n');
+                    navigator.clipboard.writeText(numbers).then(() => {
+                      alert(`✓ Copied ${contacts.length} phone numbers to clipboard!\n\nNumbers are formatted with spaces for international sending.`);
+                    });
+                  },
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    background: 'white',
+                    color: '#1d1d1f',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    marginBottom: '8px'
+                  }
+                }, '📋 Copy All Numbers'),
+                h('button', {
+                  onClick: () => {
+                    if (selectedContacts.length === 0) {
+                      alert('Please select contacts first');
+                      return;
+                    }
+                    const numbers = selectedContacts.map(c => formatPhoneForSending(c.phone)).join('\n');
+                    navigator.clipboard.writeText(numbers).then(() => {
+                      alert(`✓ Copied ${selectedContacts.length} selected phone numbers!\n\nNumbers are formatted with spaces for international sending.`);
+                    });
+                  },
+                  style: {
+                    width: '100%',
+                    padding: '12px',
+                    background: 'white',
+                    color: '#1d1d1f',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '12px',
+                    fontSize: '15px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }
+                }, '📋 Copy Selected')
+              ),
+              h('div', { style: { marginBottom: '16px' }},
+                h('h3', { style: { fontSize: '13px', fontWeight: '600', color: '#86868b', textTransform: 'uppercase', marginBottom: '12px' }}, 'Lists'),
+                h('button', {
+                  onClick: selectAll,
+                  style: {
+                    width: '100%',
+                    padding: '8px 12px',
+                    background: 'white',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer',
+                    marginBottom: '12px',
+                    color: '#0071e3'
+                  }
+                }, selectedContacts.length === contacts.length ? '✓ Deselect All in List' : `Select All in List (${contacts.length})`)
+              ),
+              lists.map(list => h('div', {
+                key: list.id,
+                onClick: () => setSelectedList(list.id),
+                style: {
+                  padding: '10px 12px',
+                  background: selectedList === list.id ? 'white' : 'transparent',
+                  borderRadius: '8px',
+                  cursor: 'pointer',
+                  marginBottom: '4px',
+                  display: 'flex',
+                  justifyContent: 'space-between',
+                  alignItems: 'center',
+                  transition: 'all 0.15s ease'
+                }
+              },
+                h('span', { style: { fontSize: '15px', fontWeight: selectedList === list.id ? '600' : '400', color: '#1d1d1f' }}, list.name),
+                h('span', { style: { fontSize: '13px', color: '#86868b' }}, list.count)
+              ))
+            ),
+            
+            // Contact List
+            h('div', { style: { flex: selectedContact ? 0.5 : 1, background: 'white', borderRadius: '18px', border: '1px solid #d2d2d7', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '600px' }},
+              h('div', { style: { padding: '20px', borderBottom: '1px solid #f5f5f7' }},
+                h('input', {
+                  type: 'text',
+                  value: searchQuery,
+                  onChange: (e) => setSearchQuery(e.target.value),
+                  placeholder: 'Search contacts...',
+                  style: {
+                    width: '100%',
+                    padding: '12px 16px',
+                    background: 'rgba(245, 247, 250, 0.5)',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '15px'
+                  }
+                })
+              ),
+              h('div', { style: { flex: 1, overflowY: 'auto' }},
+                contacts.length === 0 ? h('div', { style: { textAlign: 'center', padding: '60px 20px', color: '#86868b' }},
+                  h('p', null, 'No contacts yet. Create one to get started!')
+                ) :
+                contacts.map(contact => h('div', {
+                  key: contact.id,
+                  className: 'contact-list-item',
+                  style: {
+                    padding: '16px 20px',
+                    borderBottom: '1px solid #f5f5f7',
+                    cursor: 'pointer',
+                    background: selectedContact?.id === contact.id ? '#f5f5f7' : 'white'
+                  }
+                },
+                  h('div', { style: { display: 'flex', alignItems: 'center', gap: '12px' }},
+                    h('div', {
+                      className: 'checkbox' + (selectedContacts.find(c => c.id === contact.id) ? ' checked' : ''),
+                      onClick: (e) => { e.stopPropagation(); toggleContact(contact); },
+                      style: {
+                        width: '20px',
+                        height: '20px',
+                        borderRadius: '4px',
+                        border: '2px solid ' + (selectedContacts.find(c => c.id === contact.id) ? '#0071e3' : '#d2d2d7'),
+                        background: selectedContacts.find(c => c.id === contact.id) ? '#0071e3' : 'white',
+                        display: 'flex',
+                        alignItems: 'center',
+                        justifyContent: 'center',
+                        cursor: 'pointer',
+                        flexShrink: 0
+                      }
+                    },
+                      selectedContacts.find(c => c.id === contact.id) && h('span', { style: { color: 'white', fontSize: '12px', fontWeight: 'bold' }}, '✓')
+                    ),
+                    h('div', { 
+                      onClick: () => setSelectedContact(contact),
+                      style: { flex: 1, cursor: 'pointer' }
+                    },
+                      h('div', { style: { fontWeight: '500', fontSize: '15px', color: '#1d1d1f', marginBottom: '2px' }}, `${contact.first_name} ${contact.last_name}`),
+                      h('div', { style: { fontSize: '13px', color: '#86868b' }}, contact.phone)
+                    )
+                  )
+                ))
+              )
+            ),
+            
+            // Contact Detail - Always render, component handles null case
+            ContactDetail({
+              contact: selectedContact,
+              onEdit: () => { setEditingContact(selectedContact); setShowContactModal(true); },
+              onDelete: () => deleteContact(selectedContact.id),
+              onAddTag: (tag) => addTagToContact(selectedContact.id, tag),
+              onRemoveTag: (tag) => removeTagFromContact(selectedContact.id, tag),
+              onClose: () => setSelectedContact(null)
+            })
+          );
+        }
+
+        function ContactDetail(props) {
+          const { contact, onEdit, onDelete, onAddTag, onRemoveTag, onClose } = props;
+          const [newTag, setNewTag] = React.useState('');
+          const [messageHistory, setMessageHistory] = React.useState([]);
+          const [loading, setLoading] = React.useState(true);
+
+          React.useEffect(() => {
+            if (contact && contact.id) {
+              fetchMessageHistory();
+            }
+          }, [contact?.id]);
+
+          const fetchMessageHistory = async () => {
+            if (!contact || !contact.id) return;
+            try {
+              setLoading(true);
+              const { data, error } = await supabaseClient
+                .from('messages')
+                .select('*')
+                .eq('contact_id', contact.id)
+                .order('created_at', { ascending: false });
+              if (!error && data) {
+                setMessageHistory(data);
+              }
+            } catch (err) { 
+              console.error('Error:', err);
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          // Handle no contact by returning hidden element instead of null
+          if (!contact) {
+            return h('div', { style: { display: 'none' }});
+          }
+
+          return h('div', { style: { width: '400px', background: 'white', borderRadius: '18px', border: '1px solid #d2d2d7', padding: '32px', flexShrink: 0, maxHeight: '600px', overflowY: 'auto' }},
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }},
+              h('h2', { style: { fontSize: '24px', fontWeight: '700' }}, 'Contact Details'),
+              h('button', { onClick: onClose, style: { background: 'none', border: 'none', fontSize: '24px', cursor: 'pointer', color: '#86868b' }}, '×')
+            ),
+            
+            h('div', { style: { marginBottom: '32px' }},
+              h('div', { style: { width: '80px', height: '80px', borderRadius: '50%', background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '32px', fontWeight: '600', margin: '0 auto 16px' }},
+                (contact.first_name?.[0] || '?').toUpperCase()
+              ),
+              h('div', { style: { textAlign: 'center' }},
+                h('h3', { style: { fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}, `${contact.first_name} ${contact.last_name}`),
+                h('p', { style: { color: '#86868b', fontSize: '15px' }}, contact.phone)
+              )
+            ),
+            
+            h('div', { style: { marginBottom: '24px' }},
+              h('h4', { style: { fontSize: '15px', fontWeight: '600', marginBottom: '12px' }}, 'Tags'),
+              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }},
+                (contact.metadata?.tags || []).map(tag => h('span', {
+                  key: tag,
+                  className: 'tag',
+                  style: {
+                    background: '#e8f0fe',
+                    color: '#0071e3',
+                    padding: '6px 12px',
+                    borderRadius: '12px',
+                    fontSize: '13px',
+                    display: 'flex',
+                    alignItems: 'center',
+                    gap: '8px'
+                  }
+                },
+                  tag,
+                  h('span', { onClick: () => onRemoveTag(tag), style: { cursor: 'pointer', fontWeight: 'bold' }}, '×')
+                ))
+              ),
+              h('div', { style: { display: 'flex', gap: '8px' }},
+                h('input', {
+                  type: 'text',
+                  value: newTag,
+                  onChange: (e) => setNewTag(e.target.value),
+                  placeholder: 'New tag',
+                  style: {
+                    flex: 1,
+                    padding: '8px 12px',
+                    border: '1px solid #d2d2d7',
+                    borderRadius: '8px',
+                    fontSize: '13px'
+                  },
+                  onKeyPress: (e) => {
+                    if (e.key === 'Enter' && newTag) {
+                      onAddTag(newTag);
+                      setNewTag('');
+                    }
+                  }
+                }),
+                h('button', {
+                  onClick: () => { if (newTag) { onAddTag(newTag); setNewTag(''); } },
+                  style: {
+                    padding: '8px 16px',
+                    background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                    color: 'white',
+                    border: 'none',
+                    borderRadius: '8px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    cursor: 'pointer'
+                  }
+                }, 'Add')
+              )
+            ),
+            
+            h('div', { style: { marginBottom: '24px' }},
+              h('h4', { style: { fontSize: '15px', fontWeight: '600', marginBottom: '12px' }}, 'Message History'),
+              h('div', { style: { maxHeight: '200px', overflowY: 'auto' }},
+                loading ? h('p', { style: { color: '#86868b', fontSize: '13px', textAlign: 'center', padding: '20px' }}, 'Loading...') :
+                messageHistory.length === 0 ? h('p', { style: { color: '#86868b', fontSize: '13px', textAlign: 'center', padding: '20px' }}, 'No messages sent yet') :
+                messageHistory.map(msg => h('div', {
+                  key: msg.id,
+                  style: {
+                    padding: '12px',
+                    background: 'rgba(245, 247, 250, 0.5)',
+                    borderRadius: '8px',
+                    marginBottom: '8px'
+                  }
+                },
+                  h('div', { style: { fontSize: '13px', color: '#1d1d1f', marginBottom: '4px' }}, msg.message),
+                  h('div', { style: { fontSize: '11px', color: '#86868b', display: 'flex', justifyContent: 'space-between' }},
+                    h('span', null, new Date(msg.created_at).toLocaleDateString()),
+                    h('span', { style: { 
+                      color: msg.status === 'sent' ? '#34C759' : msg.status === 'queued' ? '#FF9F0A' : '#FF3B30',
+                      fontWeight: '600'
+                    }}, msg.status.toUpperCase())
+                  )
+                ))
+              )
+            ),
+            
+            h('div', { style: { display: 'flex', gap: '8px' }},
+              h('button', {
+                onClick: onEdit,
+                style: {
+                  flex: 1,
+                  padding: '12px',
+                  background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }
+              }, 'Edit'),
+              h('button', {
+                onClick: onDelete,
+                style: {
+                  flex: 1,
+                  padding: '12px',
+                  background: '#FF3B30',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }
+              }, 'Delete')
+            )
+          );
+        }
+
+        function ContactModal(props) {
+          const { contact, show, onClose, onSave } = props;
+          const [formData, setFormData] = React.useState({
+            first_name: contact?.first_name || '',
+            last_name: contact?.last_name || '',
+            phone: contact?.phone || '',
+            metadata: contact?.metadata || {}
+          });
+          const [tagInput, setTagInput] = React.useState('');
+          const [tags, setTags] = React.useState(contact?.metadata?.tags || []);
+
+          // Update form when contact changes
+          React.useEffect(() => {
+            if (contact) {
+              setFormData({
+                first_name: contact.first_name || '',
+                last_name: contact.last_name || '',
+                phone: contact.phone || '',
+                metadata: contact.metadata || {}
+              });
+              setTags(contact.metadata?.tags || []);
+            } else {
+              setFormData({
+                first_name: '',
+                last_name: '',
+                phone: '',
+                metadata: {}
+              });
+              setTags([]);
+            }
+            setTagInput('');
+          }, [contact, show]);
+
+          const handleSubmit = (e) => {
+            e.preventDefault();
+            const dataToSave = {
+              ...formData,
+              metadata: {
+                ...formData.metadata,
+                tags: tags
+              }
+            };
+            onSave(dataToSave);
+          };
+
+          const addTag = () => {
+            if (tagInput.trim() && !tags.includes(tagInput.trim())) {
+              setTags([...tags, tagInput.trim()]);
+              setTagInput('');
+            }
+          };
+
+          const removeTag = (tagToRemove) => {
+            setTags(tags.filter(tag => tag !== tagToRemove));
+          };
+
+          // Always render, but hide if not shown
+          if (!show) {
+            return h('div', { style: { display: 'none' }});
+          }
+
+          return h('div', { className: 'modal-overlay', onClick: onClose },
+            h('div', { className: 'modal-content', onClick: (e) => e.stopPropagation(), style: { padding: '32px' }},
+              h('h2', { style: { fontSize: '24px', fontWeight: '700', marginBottom: '24px' }}, contact ? 'Edit Contact' : 'New Contact'),
+              h('form', { onSubmit: handleSubmit },
+                h('div', { style: { marginBottom: '20px' }},
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'First Name'),
+                  h('input', {
+                    type: 'text',
+                    value: formData.first_name,
+                    onChange: (e) => setFormData({ ...formData, first_name: e.target.value }),
+                    style: {
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #d2d2d7',
+                      borderRadius: '10px',
+                      fontSize: '15px'
+                    },
+                    required: true
+                  })
+                ),
+                h('div', { style: { marginBottom: '20px' }},
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Last Name'),
+                  h('input', {
+                    type: 'text',
+                    value: formData.last_name,
+                    onChange: (e) => setFormData({ ...formData, last_name: e.target.value }),
+                    style: {
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #d2d2d7',
+                      borderRadius: '10px',
+                      fontSize: '15px'
+                    },
+                    required: true
+                  })
+                ),
+                h('div', { style: { marginBottom: '20px' }},
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Phone Number'),
+                  h('input', {
+                    type: 'tel',
+                    value: formData.phone,
+                    onChange: (e) => setFormData({ ...formData, phone: e.target.value }),
+                    placeholder: '+1234567890 or 1234567890',
+                    style: {
+                      width: '100%',
+                      padding: '12px',
+                      border: '1px solid #d2d2d7',
+                      borderRadius: '10px',
+                      fontSize: '15px'
+                    },
+                    required: true
+                  })
+                ),
+                h('div', { style: { marginBottom: '24px' }},
+                  h('label', { style: { display: 'block', fontSize: '15px', fontWeight: '600', marginBottom: '8px' }}, 'Tags'),
+                  h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px', minHeight: '40px', padding: '8px', background: 'rgba(245, 247, 250, 0.5)', borderRadius: '10px' }},
+                    tags.length === 0 ? h('span', { style: { color: '#86868b', fontSize: '13px' }}, 'No tags yet') :
+                    tags.map(tag => h('span', {
+                      key: tag,
+                      style: {
+                        background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                        color: 'white',
+                        padding: '6px 12px',
+                        borderRadius: '12px',
+                        fontSize: '13px',
+                        display: 'inline-flex',
+                        alignItems: 'center',
+                        gap: '8px'
+                      }
+                    },
+                      tag,
+                      h('span', { 
+                        onClick: () => removeTag(tag),
+                        style: { cursor: 'pointer', fontWeight: 'bold', fontSize: '14px' }
+                      }, '×')
+                    ))
+                  ),
+                  h('div', { style: { display: 'flex', gap: '8px' }},
+                    h('input', {
+                      type: 'text',
+                      value: tagInput,
+                      onChange: (e) => setTagInput(e.target.value),
+                      placeholder: 'Add a tag (e.g., VIP, Customer)',
+                      style: {
+                        flex: 1,
+                        padding: '10px 12px',
+                        border: '1px solid #d2d2d7',
+                        borderRadius: '8px',
+                        fontSize: '14px'
+                      },
+                      onKeyPress: (e) => {
+                        if (e.key === 'Enter') {
+                          e.preventDefault();
+                          addTag();
+                        }
+                      }
+                    }),
+                    h('button', {
+                      type: 'button',
+                      onClick: addTag,
+                      style: {
+                        padding: '10px 20px',
+                        background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                        color: 'white',
+                        border: 'none',
+                        borderRadius: '8px',
+                        fontSize: '14px',
+                        fontWeight: '600',
+                        cursor: 'pointer'
+                      }
+                    }, '+ Add')
+                  ),
+                  h('p', { style: { marginTop: '8px', fontSize: '12px', color: '#86868b' }}, 'Tags help organize contacts into lists')
+                ),
+                h('div', { style: { display: 'flex', gap: '12px' }},
+                  h('button', {
+                    type: 'button',
+                    onClick: onClose,
+                    style: {
+                      flex: 1,
+                      padding: '14px',
+                      background: 'rgba(245, 247, 250, 0.5)',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }
+                  }, 'Cancel'),
+                  h('button', {
+                    type: 'submit',
+                    style: {
+                      flex: 1,
+                      padding: '14px',
+                      background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '10px',
+                      fontSize: '15px',
+                      fontWeight: '600',
+                      cursor: 'pointer'
+                    }
+                  }, 'Save Contact')
+                )
+              )
+            )
+          );
+        }
+
+        function ComposerView(props) {
+          const { messageTemplate, setMessageTemplate, contacts, selectedContacts, toggleContact, selectAll, sending } = props;
+
+          return h('div', { className: 'fade-in' },
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('label', { style: { display: 'block', fontSize: '17px', fontWeight: '600', color: '#1d1d1f', marginBottom: '12px' }}, 'Message'),
+              h('textarea', {
+                value: messageTemplate,
+                onChange: (e) => setMessageTemplate(e.target.value),
+                placeholder: 'Hi {{first_name}}, your appointment is scheduled for {{date}}.',
+                rows: 6,
+                style: {
+                  width: '100%',
+                  padding: '16px',
+                  background: 'rgba(245, 247, 250, 0.5)',
+                  border: '1px solid #d2d2d7',
+                  borderRadius: '12px',
+                  color: '#1d1d1f',
+                  fontSize: '15px',
+                  lineHeight: '1.5',
+                  resize: 'vertical',
+                  fontFamily: 'inherit'
+                }
+              }),
+              h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b', lineHeight: '1.4' }}, 'Use {{variable}} to personalize each message')
+            ),
+            
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)', marginBottom: '24px' }},
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }},
+                h('label', { style: { fontSize: '17px', fontWeight: '600', color: '#1d1d1f' }}, 'Recipients'),
+                h('span', { style: { fontSize: '15px', color: '#86868b' }}, `${selectedContacts.length} of ${contacts.length} selected`)
+              ),
+              
+              contacts.length === 0 ? h('div', { style: { textAlign: 'center', padding: '48px 24px', color: '#86868b' }},
+                h('p', { style: { fontSize: '15px' }}, 'No contacts yet. Import contacts to get started.')
+              ) : h('div', null,
+                h('button', { 
+                  onClick: selectAll, 
+                  style: { 
+                    marginBottom: '16px', 
+                    padding: '8px 16px', 
+                    background: 'rgba(245, 247, 250, 0.5)', 
+                    border: 'none', 
+                    borderRadius: '8px', 
+                    color: '#1d1d1f', 
+                    fontSize: '13px',
+                    fontWeight: '500',
+                    cursor: 'pointer' 
+                  }
+                }, selectedContacts.length === contacts.length ? 'Deselect All' : 'Select All'),
+                
+                h('div', { style: { maxHeight: '300px', overflowY: 'auto' }},
+                  contacts.map(contact => h('div', {
+                    key: contact.id,
+                    onClick: () => toggleContact(contact),
+                    className: 'contact-row',
+                    style: {
+                      padding: '14px 16px',
+                      marginBottom: '8px',
+                      background: selectedContacts.find(c => c.id === contact.id) ? '#f5f5f7' : '#ffffff',
+                      border: `1px solid ${selectedContacts.find(c => c.id === contact.id) ? '#1d1d1f' : '#d2d2d7'}`,
+                      borderRadius: '10px',
+                      cursor: 'pointer',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center'
+                    }
+                  },
+                    h('div', null,
+                      h('div', { style: { fontWeight: '500', color: '#1d1d1f', fontSize: '15px', marginBottom: '2px' }}, `${contact.first_name} ${contact.last_name}`),
+                      h('div', { style: { fontSize: '13px', color: '#86868b' }}, contact.phone)
+                    ),
+                    h('div', { style: { 
+                      width: '22px', 
+                      height: '22px', 
+                      borderRadius: '50%', 
+                      background: selectedContacts.find(c => c.id === contact.id) ? '#34C759' : '#ffffff', 
+                      border: `2px solid ${selectedContacts.find(c => c.id === contact.id) ? '#34C759' : '#d2d2d7'}`,
+                      display: 'flex',
+                      alignItems: 'center',
+                      justifyContent: 'center',
+                      color: '#ffffff',
+                      fontSize: '12px',
+                      fontWeight: 'bold'
+                    }}, selectedContacts.find(c => c.id === contact.id) && '✓')
+                  ))
+                )
+              )
+            ),
+            
+            h('button', {
+              onClick: () => window.handleSendBlast(),
+              disabled: sending || !messageTemplate || selectedContacts.length === 0,
+              style: {
+                width: '100%',
+                padding: '16px',
+                background: (sending || !messageTemplate || selectedContacts.length === 0) ? '#d2d2d7' : '#0071e3',
+                border: 'none',
+                borderRadius: '12px',
+                color: '#ffffff',
+                fontSize: '17px',
+                fontWeight: '600',
+                cursor: (sending || !messageTemplate || selectedContacts.length === 0) ? 'not-allowed' : 'pointer',
+                opacity: (sending || !messageTemplate || selectedContacts.length === 0) ? 0.5 : 1
+              }
+            }, sending ? 'Sending...' : `Send to ${selectedContacts.length} ${selectedContacts.length === 1 ? 'person' : 'people'}`)
+          );
+        }
+
+        function DeliveryView(props) {
+          const { batches, stats } = props;
+          const [expandedBatch, setExpandedBatch] = React.useState(null);
+          const [unsentNumbers, setUnsentNumbers] = React.useState(null);
+          const [loading, setLoading] = React.useState(false);
+
+          const showUnsentNumbers = async (batchId) => {
+            setLoading(true);
+            try {
+              const { data: messages, error } = await supabaseClient
+                .from('messages')
+                .select('phone_number, status')
+                .eq('batch_id', batchId)
+                .order('created_at', { ascending: true });
+
+              if (error) throw error;
+
+              const unsent = messages.filter(m => m.status === 'queued' || m.status === 'failed');
+              const sent = messages.filter(m => m.status === 'sent');
+              
+              setUnsentNumbers({
+                batchId,
+                unsent: unsent.map(m => m.phone_number),
+                sent: sent.map(m => m.phone_number),
+                total: messages.length
+              });
+              setExpandedBatch(batchId);
+            } catch (err) {
+              alert('Error fetching messages: ' + err.message);
+            } finally {
+              setLoading(false);
+            }
+          };
+
+          const copyToClipboard = (text) => {
+            navigator.clipboard.writeText(text).then(() => {
+              alert('✓ Copied to clipboard! Paste into Quick Send tab.');
+            }).catch(() => {
+              alert('Please manually select and copy the numbers');
+            });
+          };
+
+          return h('div', { className: 'fade-in' },
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(160px, 1fr))', gap: '16px', marginBottom: '32px' }},
+              [
+                { label: 'Total', value: stats.totalBatches, color: '#86868b' },
+                { label: 'Completed', value: stats.completed, color: '#34C759' },
+                { label: 'Sending', value: stats.sending, color: '#FF9F0A' },
+                { label: 'Failed', value: stats.failed, color: '#FF3B30' },
+                { label: 'Cancelled', value: stats.cancelled, color: '#8E8E93' }
+              ].map((stat, i) => h('div', { 
+                key: i, 
+                style: { 
+                  background: 'rgba(255, 255, 255, 0.7)', 
+                  backdropFilter: 'blur(20px) saturate(180%)',
+                  WebkitBackdropFilter: 'blur(20px) saturate(180%)',
+                  borderRadius: '18px', 
+                  padding: '28px 20px', 
+                  border: '1px solid rgba(255, 255, 255, 0.8)',
+                  textAlign: 'center',
+                  boxShadow: '0 8px 24px rgba(0, 0, 0, 0.04), 0 2px 4px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)',
+                  transition: 'all 0.3s ease'
+                }
+              },
+                h('div', { style: { fontSize: '32px', fontWeight: '700', color: stat.color, marginBottom: '4px', letterSpacing: '-0.02em' }}, stat.value),
+                h('div', { style: { fontSize: '13px', color: '#86868b', fontWeight: '500' }}, stat.label)
+              ))
+            ),
+            
+            h('div', { style: { background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '20px', padding: '32px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 8px 32px rgba(0, 0, 0, 0.04), 0 1px 3px rgba(0, 0, 0, 0.02), inset 0 1px 0 rgba(255, 255, 255, 0.9)' }},
+              h('h3', { style: { fontSize: '20px', fontWeight: '600', color: '#1d1d1f', marginBottom: '24px' }}, 'Recent Activity'),
+              batches.length === 0 ? h('div', { style: { textAlign: 'center', padding: '60px 24px', color: '#86868b' }},
+                h('p', { style: { fontSize: '15px', marginBottom: '8px' }}, 'No activity yet'),
+                h('p', { style: { fontSize: '13px' }}, 'Your message batches will appear here')
+              ) :
+              batches.map(batch => h('div', { 
+                key: batch.id, 
+                style: { marginBottom: '12px' }
+              },
+                h('div', { 
+                  className: 'batch-row', 
+                  style: { 
+                    padding: '16px', 
+                    background: 'rgba(245, 247, 250, 0.5)', 
+                    borderRadius: '12px', 
+                    display: 'grid', 
+                    gridTemplateColumns: '1fr auto auto auto', 
+                    gap: '16px', 
+                    alignItems: 'center' 
+                  }
+                },
+                  h('div', null,
+                    h('div', { style: { fontSize: '15px', fontWeight: '500', color: '#1d1d1f', marginBottom: '4px' }}, `${batch.total_messages} messages`),
+                    h('div', { style: { fontSize: '13px', color: '#86868b' }}, new Date(batch.created_at).toLocaleString())
+                  ),
+                  h('div', { style: { fontSize: '13px', color: '#86868b' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
+                  h('div', { 
+                    style: { 
+                      padding: '4px 12px', 
+                      borderRadius: '12px', 
+                      fontSize: '12px', 
+                      fontWeight: '600',
+                      background: batch.status === 'completed' ? '#d1f4dd' : 
+                                 batch.status === 'sending' ? '#fff4d1' : 
+                                 batch.status === 'failed' ? '#ffd1d1' : '#e5e5ea',
+                      color: batch.status === 'completed' ? '#1b5e20' :
+                            batch.status === 'sending' ? '#8b6914' :
+                            batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
+                    }
+                  }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1)),
+                  batch.status !== 'completed' && h('button', {
+                    onClick: () => showUnsentNumbers(batch.id),
+                    disabled: loading,
+                    style: {
+                      padding: '8px 16px',
+                      background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+                      color: 'white',
+                      border: 'none',
+                      borderRadius: '8px',
+                      fontSize: '13px',
+                      fontWeight: '600',
+                      cursor: loading ? 'not-allowed' : 'pointer',
+                      opacity: loading ? 0.5 : 1
+                    }
+                  }, '📋 View Numbers')
+                ),
+                
+                // Expanded details
+                expandedBatch === batch.id && unsentNumbers && h('div', {
+                  style: {
+                    marginTop: '12px',
+                    padding: '24px',
+                    background: 'white',
+                    borderRadius: '12px',
+                    border: '1px solid #d2d2d7'
+                  }
+                },
+                  h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }},
+                    h('h4', { style: { fontSize: '17px', fontWeight: '600' }}, 'Batch Details'),
+                    h('button', {
+                      onClick: () => setExpandedBatch(null),
+                      style: {
+                        background: 'none',
+                        border: 'none',
+                        fontSize: '20px',
+                        cursor: 'pointer',
+                        color: '#86868b'
+                      }
+                    }, '×')
+                  ),
+                  
+                  h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }},
+                    h('div', { style: { padding: '12px', background: '#d1f4dd', borderRadius: '8px' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#1b5e20' }}, unsentNumbers.sent.length),
+                      h('div', { style: { fontSize: '13px', color: '#1b5e20', marginTop: '4px' }}, '✓ Sent')
+                    ),
+                    h('div', { style: { padding: '12px', background: '#fff4d1', borderRadius: '8px' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#8b6914' }}, unsentNumbers.unsent.length),
+                      h('div', { style: { fontSize: '13px', color: '#8b6914', marginTop: '4px' }}, '⏳ Remaining')
+                    )
+                  ),
+
+                  unsentNumbers.unsent.length > 0 && h('div', null,
+                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }},
+                      h('label', { style: { fontSize: '15px', fontWeight: '600' }}, `Remaining Numbers (${unsentNumbers.unsent.length})`),
+                      h('button', {
+                        onClick: () => copyToClipboard(unsentNumbers.unsent.join('\n')),
+                        style: {
+                          padding: '8px 16px',
+                          background: '#34C759',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }
+                      }, '📋 Copy All')
+                    ),
+                    h('textarea', {
+                      readOnly: true,
+                      value: unsentNumbers.unsent.join('\n'),
+                      style: {
+                        width: '100%',
+                        height: '200px',
+                        padding: '12px',
+                        background: 'rgba(245, 247, 250, 0.5)',
+                        border: '1px solid #d2d2d7',
+                        borderRadius: '8px',
+                        fontSize: '13px',
+                        fontFamily: 'monospace',
+                        resize: 'vertical'
+                      }
+                    }),
+                    h('p', { style: { marginTop: '12px', fontSize: '13px', color: '#86868b' }}, 
+                      '💡 Tip: Click "Copy All" then paste into Quick Send tab, or select specific numbers with click & drag'
+                    )
+                  ),
+
+                  unsentNumbers.unsent.length === 0 && h('div', {
+                    style: {
+                      padding: '20px',
+                      textAlign: 'center',
+                      color: '#34C759',
+                      fontSize: '15px'
+                    }
+                  }, '✓ All messages sent!')
+                )
+              ))
+            )
+          );
+        }
+
+        const root = ReactDOM.createRoot(document.getElementById('root'));
+        root.render(React.createElement(App));
+    </script>
+</body>
+</html>
