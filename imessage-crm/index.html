@@ -284,6 +284,8 @@
           const [searchQuery, setSearchQuery] = useState('');
           const [stats, setStats] = useState({ totalBatches: 0, completed: 0, sending: 0, failed: 0, cancelled: 0 });
           const [error, setError] = useState(null);
+          const [deliveryFilter, setDeliveryFilter] = useState('all'); // 'all', 'deliverable', 'undeliverable'
+          const [csvCountryCode, setCsvCountryCode] = useState('+1'); // default country code for CSV imports
 
           useEffect(() => {
             try {
@@ -397,7 +399,7 @@
                 
                 if (contact.phone) {
                   newContacts.push({
-                    phone: normalizePhoneNumber(contact.phone),
+                    phone: normalizePhoneNumber(contact.phone, csvCountryCode),
                     first_name: contact.first_name || '',
                     last_name: contact.last_name || '',
                     metadata: contact
@@ -459,7 +461,10 @@
               const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
                 batchId: batch.id,
                 supabaseUrl: SUPABASE_URL,
-                supabaseKey: SUPABASE_ANON_KEY
+                supabaseKey: SUPABASE_ANON_KEY,
+                timeout: 15,
+                skipOnFailure: true,
+                retryCount: 1
               }))}`;
 
               window.location.href = shortcutUrl;
@@ -505,91 +510,53 @@
             setSelectedContacts(prev => prev.length === filtered.length ? [] : [...filtered]);
           };
 
-          const normalizePhoneNumber = (phone) => {
+          const normalizePhoneNumber = (phone, defaultCountryCode = '+1') => {
             // Remove all non-digit characters except +
             let cleaned = phone.replace(/[^\d+]/g, '');
-            
+
             // Remove any + signs that aren't at the start
             if (cleaned.indexOf('+') > 0) {
               cleaned = cleaned.replace(/\+/g, '');
               cleaned = '+' + cleaned;
             }
-            
-            // If no + sign, add it
-            if (!cleaned.startsWith('+')) {
-              cleaned = '+' + cleaned;
-            }
-            
-            // Extract just the digits after the +
-            const digits = cleaned.substring(1);
-            
-            // Return in iOS-standard format: +[country code][number] with NO SPACES
-            // This is the format iOS expects for iMessage/SMS
-            
-            // US/Canada: Ensure it starts with +1
-            if (digits.length === 10) {
-              // 10 digits = US number without country code
-              return '+1' + digits;
-            } else if (digits.length === 11 && digits.startsWith('1')) {
-              // Already has US country code
-              return '+' + digits;
-            }
-            // UK: +44
-            else if (digits.startsWith('44') && digits.length >= 11 && digits.length <= 13) {
-              return '+' + digits;
-            }
-            // Australia: +61
-            else if (digits.startsWith('61') && digits.length >= 10 && digits.length <= 11) {
-              return '+' + digits;
-            }
-            // UAE: +971
-            else if (digits.startsWith('971') && digits.length >= 11 && digits.length <= 12) {
-              return '+' + digits;
-            }
-            // Mexico: +52
-            else if (digits.startsWith('52') && digits.length >= 11 && digits.length <= 12) {
-              return '+' + digits;
-            }
-            // India: +91
-            else if (digits.startsWith('91') && digits.length >= 11 && digits.length <= 12) {
-              return '+' + digits;
-            }
-            // China: +86
-            else if (digits.startsWith('86') && digits.length >= 11 && digits.length <= 13) {
-              return '+' + digits;
-            }
-            // Japan: +81
-            else if (digits.startsWith('81') && digits.length >= 10 && digits.length <= 11) {
-              return '+' + digits;
-            }
-            // France: +33
-            else if (digits.startsWith('33') && digits.length >= 10 && digits.length <= 11) {
-              return '+' + digits;
-            }
-            // Germany: +49
-            else if (digits.startsWith('49') && digits.length >= 10 && digits.length <= 13) {
-              return '+' + digits;
-            }
-            // Spain: +34
-            else if (digits.startsWith('34') && digits.length >= 11 && digits.length <= 11) {
-              return '+' + digits;
-            }
-            // Italy: +39
-            else if (digits.startsWith('39') && digits.length >= 10 && digits.length <= 12) {
-              return '+' + digits;
-            }
-            // Brazil: +55
-            else if (digits.startsWith('55') && digits.length >= 11 && digits.length <= 13) {
-              return '+' + digits;
-            }
-            // Default: If it has + and digits, return as-is
-            else if (cleaned.startsWith('+') && digits.length >= 8) {
-              return '+' + digits;
-            }
-            // Fallback
-            else {
+
+            // If starts with +, process as international number
+            if (cleaned.startsWith('+')) {
+              const digits = cleaned.substring(1);
+              // Validate and return
+              if (digits.length >= 8) return '+' + digits;
               return cleaned;
             }
+
+            // No + sign - need to determine country code
+            const digits = cleaned.replace(/\D/g, '');
+
+            // Check if it already has a known country code prefix
+            // US/Canada: 10 digits without code, or 11 starting with 1
+            if (digits.length === 10) {
+              // Could be US without country code, or another country
+              const cc = defaultCountryCode.replace('+', '');
+              if (cc === '1') return '+1' + digits;
+              return '+' + cc + digits;
+            } else if (digits.length === 11 && digits.startsWith('1')) {
+              return '+' + digits;
+            }
+            // UK: starts with 0 (local format), convert to +44
+            else if (digits.startsWith('0') && defaultCountryCode === '+44') {
+              return '+44' + digits.substring(1);
+            }
+            // For other lengths, apply default country code if the number looks local
+            else if (digits.length >= 7 && digits.length <= 10 && !digits.startsWith('0')) {
+              const cc = defaultCountryCode.replace('+', '');
+              return '+' + cc + digits;
+            }
+            // If the number is long enough to have its own country code
+            else if (digits.length >= 11) {
+              return '+' + digits;
+            }
+
+            // Fallback
+            return '+' + digits;
           };
           
           // Helper function to format phone for DISPLAY ONLY (with spaces for readability)
@@ -702,19 +669,25 @@
 
           const getFilteredContacts = () => {
             let filtered = contacts;
-            
+
             if (selectedList !== 'all') {
               filtered = filtered.filter(c => c.metadata?.tags?.includes(selectedList));
             }
-            
+
+            if (deliveryFilter === 'undeliverable') {
+              filtered = filtered.filter(c => c.metadata?.delivery_status === 'undeliverable');
+            } else if (deliveryFilter === 'deliverable') {
+              filtered = filtered.filter(c => c.metadata?.delivery_status !== 'undeliverable');
+            }
+
             if (searchQuery) {
-              filtered = filtered.filter(c => 
+              filtered = filtered.filter(c =>
                 c.first_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.last_name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
                 c.phone?.includes(searchQuery)
               );
             }
-            
+
             return filtered;
           };
 
@@ -841,6 +814,61 @@
             }
           };
 
+          const markContactDeliveryStatus = async (contactId, status) => {
+            const contact = contacts.find(c => c.id === contactId);
+            if (!contact) return;
+            const newMetadata = {
+              ...contact.metadata,
+              delivery_status: status
+            };
+            try {
+              const { error } = await supabaseClient
+                .from('contacts')
+                .update({ metadata: newMetadata })
+                .eq('id', contactId);
+              if (error) throw error;
+              fetchContacts();
+            } catch (err) {
+              console.error('Error updating delivery status:', err);
+            }
+          };
+
+          const markBatchFailedContacts = async (batchId) => {
+            try {
+              const { data: messages, error } = await supabaseClient
+                .from('messages')
+                .select('contact_id, phone_number, status')
+                .eq('batch_id', batchId);
+              if (error) throw error;
+
+              const failedMessages = messages.filter(m => m.status === 'failed' || m.status === 'queued');
+              let marked = 0;
+              for (const msg of failedMessages) {
+                if (msg.contact_id) {
+                  await markContactDeliveryStatus(msg.contact_id, 'undeliverable');
+                  marked++;
+                } else {
+                  // For Quick Send (no contact_id), find by phone number
+                  const matchingContact = contacts.find(c => c.phone === msg.phone_number);
+                  if (matchingContact) {
+                    await markContactDeliveryStatus(matchingContact.id, 'undeliverable');
+                    marked++;
+                  }
+                }
+              }
+              alert(`Marked ${marked} contact(s) as undeliverable`);
+              fetchContacts();
+            } catch (err) {
+              alert('Error marking contacts: ' + err.message);
+            }
+          };
+
+          const clearDeliveryStatus = async (contactId) => {
+            await markContactDeliveryStatus(contactId, 'deliverable');
+          };
+
+          window.markBatchFailedContacts = markBatchFailedContacts;
+
           const filteredContacts = getFilteredContacts();
 
           return h('div', { style: { minHeight: '100vh', background: 'transparent', position: 'relative', zIndex: 1 }},
@@ -876,7 +904,7 @@
                     ),
                     h('div', null,
                       h('h1', { style: { fontSize: '42px', fontWeight: '600', letterSpacing: '-0.03em', color: '#1d1d1f', marginBottom: '2px' }}, 'deliveredBlue'),
-                      h('p', { style: { fontSize: '17px', color: '#86868b', fontWeight: '500', letterSpacing: '-0.01em' }}, 'CRM')
+                      h('p', { style: { fontSize: '17px', color: '#86868b', fontWeight: '500', letterSpacing: '-0.01em' }}, 'iMessage CRM')
                     )
                   ),
                   h('button', {
@@ -899,8 +927,8 @@
               ),
               
               // Tabs
-              h('div', { style: { marginBottom: '48px', borderBottom: '1px solid #d2d2d7' }},
-                h('div', { style: { display: 'flex', gap: '32px' }},
+              h('div', { style: { marginBottom: '48px' }},
+                h('div', { style: { display: 'flex', gap: '8px', background: 'rgba(245, 247, 250, 0.8)', padding: '4px', borderRadius: '14px', border: '1px solid #d2d2d7' }},
                   [
                     { id: 'contacts', label: 'Contacts' },
                     { id: 'campaigns', label: 'Campaigns' },
@@ -912,16 +940,16 @@
                     key: tab.id,
                     onClick: () => setActiveTab(tab.id),
                     style: {
-                      padding: '12px 0',
-                      background: 'transparent',
+                      padding: '10px 20px',
+                      background: activeTab === tab.id ? 'white' : 'transparent',
                       border: 'none',
-                      borderBottom: activeTab === tab.id ? '2px solid #1d1d1f' : '2px solid transparent',
+                      borderRadius: '10px',
                       color: activeTab === tab.id ? '#1d1d1f' : '#86868b',
                       cursor: 'pointer',
-                      fontSize: '17px',
+                      fontSize: '15px',
                       fontWeight: activeTab === tab.id ? '600' : '400',
                       transition: 'all 0.2s ease',
-                      marginBottom: '-1px'
+                      boxShadow: activeTab === tab.id ? '0 2px 8px rgba(0, 0, 0, 0.08)' : 'none'
                     }
                   }, tab.label))
                 )
@@ -1045,7 +1073,14 @@
                   removeTagFromContact,
                   searchQuery,
                   setSearchQuery,
-                  handleCSVUpload
+                  handleCSVUpload,
+                  deliveryFilter,
+                  setDeliveryFilter,
+                  csvCountryCode,
+                  setCsvCountryCode,
+                  allContacts: contacts,
+                  markContactDeliveryStatus,
+                  clearDeliveryStatus
                 })
               ),
               
@@ -1590,10 +1625,37 @@
             toggleContact, selectAll, selectedContact, setSelectedContact,
             setShowContactModal, setEditingContact, deleteContact,
             addTagToContact, removeTagFromContact, searchQuery, setSearchQuery,
-            handleCSVUpload
+            handleCSVUpload, deliveryFilter, setDeliveryFilter, csvCountryCode,
+            setCsvCountryCode, allContacts, markContactDeliveryStatus, clearDeliveryStatus
           } = props;
 
-          return h('div', { style: { display: 'flex', gap: '24px', minHeight: '600px' }},
+          return h('div', { style: { display: 'flex', flexDirection: 'column', gap: '16px' }},
+            // Stats Bar
+            h('div', { style: { display: 'flex', gap: '12px', padding: '16px 20px', background: 'rgba(255, 255, 255, 0.7)', backdropFilter: 'blur(20px) saturate(180%)', WebkitBackdropFilter: 'blur(20px) saturate(180%)', borderRadius: '14px', border: '1px solid rgba(255, 255, 255, 0.8)', boxShadow: '0 4px 16px rgba(0, 0, 0, 0.03)' }},
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' }},
+                h('span', { style: { fontSize: '13px', color: '#86868b', fontWeight: '500' }}, 'Total:'),
+                h('span', { style: { fontSize: '15px', fontWeight: '700', color: '#1d1d1f' }}, (allContacts || contacts).length)
+              ),
+              h('div', { style: { width: '1px', background: '#d2d2d7' }}),
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' }},
+                h('span', { style: { color: '#34C759', fontSize: '13px' }}, '\u2713'),
+                h('span', { style: { fontSize: '13px', color: '#86868b', fontWeight: '500' }}, 'Deliverable:'),
+                h('span', { style: { fontSize: '15px', fontWeight: '700', color: '#34C759' }}, (allContacts || contacts).filter(c => c.metadata?.delivery_status !== 'undeliverable').length)
+              ),
+              h('div', { style: { width: '1px', background: '#d2d2d7' }}),
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' }},
+                h('span', { style: { color: '#FF9F0A', fontSize: '13px' }}, '\u26A0'),
+                h('span', { style: { fontSize: '13px', color: '#86868b', fontWeight: '500' }}, 'Undeliverable:'),
+                h('span', { style: { fontSize: '15px', fontWeight: '700', color: '#FF9F0A' }}, (allContacts || contacts).filter(c => c.metadata?.delivery_status === 'undeliverable').length)
+              ),
+              h('div', { style: { width: '1px', background: '#d2d2d7' }}),
+              h('div', { style: { display: 'flex', alignItems: 'center', gap: '8px' }},
+                h('span', { style: { fontSize: '13px', color: '#86868b', fontWeight: '500' }}, 'Showing:'),
+                h('span', { style: { fontSize: '15px', fontWeight: '700', color: '#007AFF' }}, contacts.length)
+              )
+            ),
+            // Main content row
+            h('div', { style: { display: 'flex', gap: '24px', minHeight: '600px' }},
             // Sidebar
             h('div', { className: 'sidebar', style: { width: '280px', background: 'rgba(245, 247, 250, 0.5)', borderRadius: '18px', padding: '24px', border: '1px solid #d2d2d7', flexShrink: 0 }},
               h('div', { style: { marginBottom: '24px' }},
@@ -1630,6 +1692,36 @@
                 }, 
                   'Import CSV',
                   h('input', { type: 'file', accept: '.csv', onChange: handleCSVUpload, style: { display: 'none' }})
+                ),
+                h('div', { style: { marginBottom: '12px' }},
+                  h('label', { style: { display: 'block', fontSize: '11px', fontWeight: '600', color: '#86868b', marginBottom: '4px', textTransform: 'uppercase' }}, 'Default Country Code'),
+                  h('select', {
+                    value: csvCountryCode,
+                    onChange: (e) => setCsvCountryCode(e.target.value),
+                    style: {
+                      width: '100%',
+                      padding: '10px 12px',
+                      background: 'white',
+                      border: '1px solid #d2d2d7',
+                      borderRadius: '10px',
+                      fontSize: '14px',
+                      color: '#1d1d1f'
+                    }
+                  },
+                    h('option', { value: '+1' }, '+1 (US/Canada)'),
+                    h('option', { value: '+44' }, '+44 (UK)'),
+                    h('option', { value: '+61' }, '+61 (Australia)'),
+                    h('option', { value: '+971' }, '+971 (UAE)'),
+                    h('option', { value: '+52' }, '+52 (Mexico)'),
+                    h('option', { value: '+91' }, '+91 (India)'),
+                    h('option', { value: '+86' }, '+86 (China)'),
+                    h('option', { value: '+81' }, '+81 (Japan)'),
+                    h('option', { value: '+33' }, '+33 (France)'),
+                    h('option', { value: '+49' }, '+49 (Germany)'),
+                    h('option', { value: '+34' }, '+34 (Spain)'),
+                    h('option', { value: '+39' }, '+39 (Italy)'),
+                    h('option', { value: '+55' }, '+55 (Brazil)')
+                  )
                 ),
                 h('button', {
                   onClick: () => {
@@ -1781,9 +1873,38 @@
               },
                 h('span', { style: { fontSize: '15px', fontWeight: selectedList === list.id ? '600' : '400', color: '#1d1d1f' }}, list.name),
                 h('span', { style: { fontSize: '13px', color: '#86868b' }}, list.count)
-              ))
+              )),
+              h('div', { style: { marginTop: '24px', marginBottom: '16px' }},
+                h('h3', { style: { fontSize: '13px', fontWeight: '600', color: '#86868b', textTransform: 'uppercase', marginBottom: '12px' }}, 'Delivery Status'),
+                ['all', 'deliverable', 'undeliverable'].map(status => h('div', {
+                  key: status,
+                  onClick: () => setDeliveryFilter(status),
+                  style: {
+                    padding: '10px 12px',
+                    background: deliveryFilter === status ? 'white' : 'transparent',
+                    borderRadius: '8px',
+                    cursor: 'pointer',
+                    marginBottom: '4px',
+                    display: 'flex',
+                    justifyContent: 'space-between',
+                    alignItems: 'center',
+                    transition: 'all 0.15s ease'
+                  }
+                },
+                  h('span', { style: { fontSize: '15px', fontWeight: deliveryFilter === status ? '600' : '400', color: '#1d1d1f', display: 'flex', alignItems: 'center', gap: '8px' }},
+                    status === 'undeliverable' ? h('span', { style: { color: '#FF9F0A', fontSize: '14px' }}, '\u26A0') :
+                    status === 'deliverable' ? h('span', { style: { color: '#34C759', fontSize: '14px' }}, '\u2713') : null,
+                    status.charAt(0).toUpperCase() + status.slice(1)
+                  ),
+                  h('span', { style: { fontSize: '13px', color: '#86868b' }},
+                    status === 'all' ? (allContacts || contacts).length :
+                    status === 'undeliverable' ? (allContacts || contacts).filter(c => c.metadata?.delivery_status === 'undeliverable').length :
+                    (allContacts || contacts).filter(c => c.metadata?.delivery_status !== 'undeliverable').length
+                  )
+                ))
+              )
             ),
-            
+
             // Contact List
             h('div', { style: { flex: selectedContact ? 0.5 : 1, background: 'white', borderRadius: '18px', border: '1px solid #d2d2d7', overflow: 'hidden', display: 'flex', flexDirection: 'column', minHeight: '600px' }},
               h('div', { style: { padding: '20px', borderBottom: '1px solid #f5f5f7' }},
@@ -1835,13 +1956,24 @@
                     },
                       selectedContacts.find(c => c.id === contact.id) && h('span', { style: { color: 'white', fontSize: '12px', fontWeight: 'bold' }}, '✓')
                     ),
-                    h('div', { 
+                    h('div', {
                       onClick: () => setSelectedContact(contact),
                       style: { flex: 1, cursor: 'pointer' }
                     },
                       h('div', { style: { fontWeight: '500', fontSize: '15px', color: '#1d1d1f', marginBottom: '2px' }}, `${contact.first_name} ${contact.last_name}`),
                       h('div', { style: { fontSize: '13px', color: '#86868b' }}, contact.phone)
-                    )
+                    ),
+                    contact.metadata?.delivery_status === 'undeliverable' && h('div', {
+                      style: {
+                        padding: '2px 8px',
+                        background: '#FFF3CD',
+                        color: '#856404',
+                        borderRadius: '6px',
+                        fontSize: '11px',
+                        fontWeight: '600',
+                        flexShrink: 0
+                      }
+                    }, 'Undeliverable')
                   )
                 ))
               )
@@ -1854,13 +1986,16 @@
               onDelete: () => deleteContact(selectedContact.id),
               onAddTag: (tag) => addTagToContact(selectedContact.id, tag),
               onRemoveTag: (tag) => removeTagFromContact(selectedContact.id, tag),
-              onClose: () => setSelectedContact(null)
+              onClose: () => setSelectedContact(null),
+              onMarkUndeliverable: () => markContactDeliveryStatus(selectedContact.id, 'undeliverable'),
+              onClearDeliveryStatus: () => clearDeliveryStatus(selectedContact.id)
             })
+            ) // close inner flex row div
           );
         }
 
         function ContactDetail(props) {
-          const { contact, onEdit, onDelete, onAddTag, onRemoveTag, onClose } = props;
+          const { contact, onEdit, onDelete, onAddTag, onRemoveTag, onClose, onMarkUndeliverable, onClearDeliveryStatus } = props;
           const [newTag, setNewTag] = React.useState('');
           const [messageHistory, setMessageHistory] = React.useState([]);
           const [loading, setLoading] = React.useState(true);
@@ -1907,7 +2042,23 @@
               ),
               h('div', { style: { textAlign: 'center' }},
                 h('h3', { style: { fontSize: '20px', fontWeight: '600', marginBottom: '4px' }}, `${contact.first_name} ${contact.last_name}`),
-                h('p', { style: { color: '#86868b', fontSize: '15px' }}, contact.phone)
+                h('p', { style: { color: '#86868b', fontSize: '15px' }}, contact.phone),
+                contact.metadata?.delivery_status === 'undeliverable' && h('div', {
+                  style: {
+                    marginTop: '8px',
+                    padding: '8px 16px',
+                    background: '#FFF3CD',
+                    color: '#856404',
+                    borderRadius: '10px',
+                    fontSize: '13px',
+                    fontWeight: '600',
+                    textAlign: 'center',
+                    display: 'flex',
+                    alignItems: 'center',
+                    justifyContent: 'center',
+                    gap: '6px'
+                  }
+                }, '\u26A0 Undeliverable')
               )
             ),
             
@@ -2009,6 +2160,26 @@
                   cursor: 'pointer'
                 }
               }, 'Edit'),
+              h('button', {
+                onClick: () => {
+                  if (contact.metadata?.delivery_status === 'undeliverable') {
+                    onClearDeliveryStatus();
+                  } else {
+                    onMarkUndeliverable();
+                  }
+                },
+                style: {
+                  flex: 1,
+                  padding: '12px',
+                  background: contact.metadata?.delivery_status === 'undeliverable' ? '#34C759' : '#FF9F0A',
+                  color: 'white',
+                  border: 'none',
+                  borderRadius: '10px',
+                  fontSize: '15px',
+                  fontWeight: '600',
+                  cursor: 'pointer'
+                }
+              }, contact.metadata?.delivery_status === 'undeliverable' ? 'Mark OK' : 'Mark Undeliverable'),
               h('button', {
                 onClick: onDelete,
                 style: {
@@ -2523,7 +2694,20 @@
                           fontWeight: '600',
                           cursor: 'pointer'
                         }
-                      }, '📋 Copy All')
+                      }, '📋 Copy All'),
+                      h('button', {
+                        onClick: () => window.markBatchFailedContacts(unsentNumbers.batchId),
+                        style: {
+                          padding: '8px 16px',
+                          background: '#FF9F0A',
+                          color: 'white',
+                          border: 'none',
+                          borderRadius: '8px',
+                          fontSize: '13px',
+                          fontWeight: '600',
+                          cursor: 'pointer'
+                        }
+                      }, '\u26A0 Mark as Undeliverable')
                     ),
                     h('textarea', {
                       readOnly: true,
