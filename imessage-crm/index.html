@@ -448,7 +448,7 @@
               const messages = contacts.map(contact => ({
                 batch_id: batch.id,
                 contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
-                phone_number: normalizePhoneNumber(contact.phone),
+                phone_number: normalizePhoneNumber(contact.phone).replace('+', ''),
                 message: personalizeMessage(message, contact),
                 status: 'queued'
               }));
@@ -2528,19 +2528,25 @@
             try {
               const { data: messages, error } = await supabaseClient
                 .from('messages')
-                .select('phone_number, status')
+                .select('phone_number, status, contact_id, message, created_at')
                 .eq('batch_id', batchId)
                 .order('created_at', { ascending: true });
 
               if (error) throw error;
 
-              const unsent = messages.filter(m => m.status === 'queued' || m.status === 'failed');
+              const queued = messages.filter(m => m.status === 'queued');
+              const sending = messages.filter(m => m.status === 'sending');
               const sent = messages.filter(m => m.status === 'sent');
-              
+              const failed = messages.filter(m => m.status === 'failed');
+              const unsent = messages.filter(m => m.status === 'queued' || m.status === 'failed' || m.status === 'sending');
+
               setUnsentNumbers({
                 batchId,
                 unsent: unsent.map(m => m.phone_number),
                 sent: sent.map(m => m.phone_number),
+                queued: queued.map(m => m.phone_number),
+                sending: sending.map(m => m.phone_number),
+                failed: failed.map(m => m.phone_number),
                 total: messages.length
               });
               setExpandedBatch(batchId);
@@ -2627,7 +2633,7 @@
                             batch.status === 'failed' ? '#8b1414' : '#3a3a3c'
                     }
                   }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1)),
-                  batch.status !== 'completed' && h('button', {
+                  h('button', {
                     onClick: () => showUnsentNumbers(batch.id),
                     disabled: loading,
                     style: {
@@ -2668,14 +2674,22 @@
                     }, '×')
                   ),
                   
-                  h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }},
-                    h('div', { style: { padding: '12px', background: '#d1f4dd', borderRadius: '8px' }},
+                  h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }},
+                    h('div', { style: { padding: '12px', background: '#d1f4dd', borderRadius: '8px', textAlign: 'center' }},
                       h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#1b5e20' }}, unsentNumbers.sent.length),
-                      h('div', { style: { fontSize: '13px', color: '#1b5e20', marginTop: '4px' }}, '✓ Sent')
+                      h('div', { style: { fontSize: '12px', color: '#1b5e20', marginTop: '4px' }}, 'Sent')
                     ),
-                    h('div', { style: { padding: '12px', background: '#fff4d1', borderRadius: '8px' }},
-                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#8b6914' }}, unsentNumbers.unsent.length),
-                      h('div', { style: { fontSize: '13px', color: '#8b6914', marginTop: '4px' }}, '⏳ Remaining')
+                    h('div', { style: { padding: '12px', background: '#E3F2FD', borderRadius: '8px', textAlign: 'center' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#1565C0' }}, (unsentNumbers.sending || []).length),
+                      h('div', { style: { fontSize: '12px', color: '#1565C0', marginTop: '4px' }}, 'Sending')
+                    ),
+                    h('div', { style: { padding: '12px', background: '#fff4d1', borderRadius: '8px', textAlign: 'center' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#8b6914' }}, (unsentNumbers.queued || []).length),
+                      h('div', { style: { fontSize: '12px', color: '#8b6914', marginTop: '4px' }}, 'Queued')
+                    ),
+                    h('div', { style: { padding: '12px', background: '#ffd1d1', borderRadius: '8px', textAlign: 'center' }},
+                      h('div', { style: { fontSize: '24px', fontWeight: '700', color: '#8b1414' }}, (unsentNumbers.failed || []).length),
+                      h('div', { style: { fontSize: '12px', color: '#8b1414', marginTop: '4px' }}, 'Failed')
                     )
                   ),
 
