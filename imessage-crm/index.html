@@ -397,9 +397,19 @@
                 const contact = {};
                 headers.forEach((header, index) => { contact[header] = values[index]; });
                 
-                if (contact.phone) {
+                // Build phone from country_code + phone columns, or just phone
+                let rawPhone = '';
+                if (contact.country_code && contact.phone) {
+                  const cc = contact.country_code.toString().trim().replace(/[^\d+]/g, '');
+                  const num = contact.phone.toString().trim().replace(/[^\d]/g, '');
+                  rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + num;
+                } else if (contact.phone) {
+                  rawPhone = contact.phone;
+                }
+
+                if (rawPhone) {
                   newContacts.push({
-                    phone: normalizePhoneNumber(contact.phone, csvCountryCode),
+                    phone: normalizePhoneNumber(rawPhone, csvCountryCode),
                     first_name: contact.first_name || '',
                     last_name: contact.last_name || '',
                     metadata: contact
