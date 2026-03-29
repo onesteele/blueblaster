@@ -388,34 +388,82 @@
             try {
               const text = await file.text();
               const lines = text.split('\n');
-              const headers = lines[0].split(',').map(h => h.trim());
+
+              // Find the actual header row - look for a row containing phone-related keywords
+              let headerRowIndex = 0;
+              const phoneKeywords = ['phone', 'mobile', 'cell', 'number', 'tel', 'country'];
+              for (let i = 0; i < Math.min(lines.length, 10); i++) {
+                const lowLine = lines[i].toLowerCase();
+                if (phoneKeywords.some(kw => lowLine.includes(kw))) {
+                  headerRowIndex = i;
+                  break;
+                }
+              }
+
+              const rawHeaders = lines[headerRowIndex].split(',').map(h => h.trim().replace(/['"]/g, ''));
+              // Normalize headers to lowercase for flexible matching
+              const headers = rawHeaders.map(h => h.toLowerCase().replace(/[\s-]/g, '_').replace(/#/g, ''));
               const newContacts = [];
-              
-              for (let i = 1; i < lines.length; i++) {
+
+              console.log('CSV Header row index:', headerRowIndex);
+              console.log('CSV Headers:', rawHeaders, '→ normalized:', headers);
+
+              for (let i = headerRowIndex + 1; i < lines.length; i++) {
                 if (!lines[i].trim()) continue;
-                const values = lines[i].split(',').map(v => v.trim());
+                const values = lines[i].split(',').map(v => v.trim().replace(/['"]/g, ''));
                 const contact = {};
                 headers.forEach((header, index) => { contact[header] = values[index]; });
-                
+
+                console.log('Row', i, ':', contact);
+
+                // Find phone number - try many common column names
+                const phoneVal = contact.phone || contact.phone_number || contact.phonenumber ||
+                  contact.mobile || contact.cell || contact.number || contact.tel || contact.telephone || '';
+
+                // Find country code - try common column names
+                const ccVal = contact.country_code || contact.countrycode || contact.cc ||
+                  contact.country || contact.code || contact.dial_code || contact.dialcode || '';
+
+                // Find name fields
+                const firstName = contact.first_name || contact.firstname || contact.first || contact.name || '';
+                const lastName = contact.last_name || contact.lastname || contact.last || contact.surname || '';
+
                 // Build phone from country_code + phone columns, or just phone
                 let rawPhone = '';
-                if (contact.country_code && contact.phone) {
-                  const cc = contact.country_code.toString().trim().replace(/[^\d+]/g, '');
-                  const num = contact.phone.toString().trim().replace(/[^\d]/g, '');
+                if (ccVal && phoneVal) {
+                  const cc = ccVal.toString().trim().replace(/[^\d+]/g, '');
+                  const num = phoneVal.toString().trim().replace(/[^\d]/g, '');
                   rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + num;
-                } else if (contact.phone) {
-                  rawPhone = contact.phone;
+                } else if (phoneVal) {
+                  rawPhone = phoneVal.toString().trim();
+                }
+
+                // If no phone column found, check if first or second column looks like a phone/country code
+                if (!rawPhone && values.length >= 2) {
+                  const col0 = (values[0] || '').trim();
+                  const col1 = (values[1] || '').trim();
+                  // If first column is short (1-4 digits or +digits) it's likely country code
+                  const col0Digits = col0.replace(/[^\d]/g, '');
+                  const col1Digits = col1.replace(/[^\d]/g, '');
+                  if (col0Digits.length <= 4 && col1Digits.length >= 7) {
+                    const cc = col0.replace(/[^\d+]/g, '');
+                    rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + col1Digits;
+                  } else if (col0Digits.length >= 7) {
+                    rawPhone = col0;
+                  }
                 }
 
                 if (rawPhone) {
                   newContacts.push({
                     phone: normalizePhoneNumber(rawPhone, csvCountryCode),
-                    first_name: contact.first_name || '',
-                    last_name: contact.last_name || '',
+                    first_name: firstName,
+                    last_name: lastName,
                     metadata: contact
                   });
                 }
               }
+
+              console.log('Parsed contacts:', newContacts.length, newContacts.slice(0, 3));
 
               const { error } = await supabaseClient.from('contacts').insert(newContacts);
               if (!error) {
