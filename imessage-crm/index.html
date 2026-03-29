@@ -1245,7 +1245,7 @@
             }
           };
 
-          if (!contact) return null;
+          if (!contact) return h('div', { style: { display: 'none' }});
 
           return h('div', null,
             // Header
@@ -2178,8 +2178,24 @@
           );
         }
 
+        class ErrorBoundary extends React.Component {
+          constructor(props) { super(props); this.state = { hasError: false, error: null }; }
+          static getDerivedStateFromError(error) { return { hasError: true, error }; }
+          componentDidCatch(error, info) { console.error('React Error:', error, info); }
+          render() {
+            if (this.state.hasError) {
+              return h('div', { style: { padding: '40px', textAlign: 'center' }},
+                h('h2', { style: { color: '#FF3B30', marginBottom: '16px' }}, 'Something went wrong'),
+                h('p', { style: { color: '#666', marginBottom: '12px' }}, this.state.error?.message || 'Unknown error'),
+                h('button', { onClick: () => { this.setState({ hasError: false, error: null }); }, style: { padding: '10px 20px', background: '#007AFF', color: 'white', border: 'none', borderRadius: '10px', cursor: 'pointer' }}, 'Try Again')
+              );
+            }
+            return this.props.children;
+          }
+        }
+
         const root = ReactDOM.createRoot(document.getElementById('root'));
-        root.render(React.createElement(App));
+        root.render(h(ErrorBoundary, null, h(App)));
     </script>
 </body>
 </html>
