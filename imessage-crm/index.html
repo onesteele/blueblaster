@@ -1106,30 +1106,25 @@
 
               // CONTACT DETAIL (right)
               h('div', { className: 'glass-card', style: { width: '400px', flexShrink: 0, borderRadius: '16px', padding: '20px', overflowY: 'auto' }},
-                selectedContact
-                  ? ContactDetail({
-                      contact: selectedContact,
-                      onEdit: () => { setEditingContact(selectedContact); setShowContactModal(true); },
-                      onDelete: () => deleteContact(selectedContact.id),
-                      onAddTag: (tag) => addTagToContact(selectedContact.id, tag),
-                      onRemoveTag: (tag) => removeTagFromContact(selectedContact.id, tag),
-                      onClose: () => setSelectedContact(null),
-                      onMarkUndeliverable: () => markContactDeliveryStatus(selectedContact.id, 'undeliverable'),
-                      onClearDeliveryStatus: () => clearDeliveryStatus(selectedContact.id),
-                      formatPhoneForDisplay,
-                      blueBtn,
-                      secondaryBtn,
-                      inputStyle
-                    })
-                  : h('div', { style: { textAlign: 'center', padding: '40px', color: '#888' }},
-                      h('div', { style: { fontSize: '48px', marginBottom: '12px' }}, '\uD83D\uDC64'),
-                      h('p', { style: { fontSize: '15px' }}, 'Select a contact to view details')
-                    )
+                h(ContactDetail, {
+                  contact: selectedContact,
+                  onEdit: () => { if (selectedContact) { setEditingContact(selectedContact); setShowContactModal(true); } },
+                  onDelete: () => { if (selectedContact) deleteContact(selectedContact.id); },
+                  onAddTag: (tag) => { if (selectedContact) addTagToContact(selectedContact.id, tag); },
+                  onRemoveTag: (tag) => { if (selectedContact) removeTagFromContact(selectedContact.id, tag); },
+                  onClose: () => setSelectedContact(null),
+                  onMarkUndeliverable: () => { if (selectedContact) markContactDeliveryStatus(selectedContact.id, 'undeliverable'); },
+                  onClearDeliveryStatus: () => { if (selectedContact) clearDeliveryStatus(selectedContact.id); },
+                  formatPhoneForDisplay,
+                  blueBtn,
+                  secondaryBtn,
+                  inputStyle
+                })
               )
             ),
 
             // ======== CAMPAIGNS TAB ========
-            activeTab === 'campaigns' && CampaignsView({
+            activeTab === 'campaigns' && h(CampaignsView, {
               campaigns,
               setCampaigns,
               contacts,
@@ -1145,7 +1140,7 @@
             }),
 
             // ======== TEMPLATES TAB ========
-            activeTab === 'templates' && TemplatesView({
+            activeTab === 'templates' && h(TemplatesView, {
               templates,
               setTemplates,
               showTemplateModal,
@@ -1159,7 +1154,7 @@
             }),
 
             // ======== QUICK SEND TAB ========
-            activeTab === 'quicksend' && QuickSendView({
+            activeTab === 'quicksend' && h(QuickSendView, {
               normalizePhoneNumber,
               templates,
               platform,
@@ -1172,7 +1167,7 @@
             }),
 
             // ======== COMPOSE TAB ========
-            activeTab === 'compose' && ComposeView({
+            activeTab === 'compose' && h(ComposeView, {
               messageTemplate,
               setMessageTemplate,
               contacts: filteredContacts,
@@ -1192,7 +1187,7 @@
             }),
 
             // ======== ACTIVITY TAB ========
-            activeTab === 'activity' && DeliveryView({
+            activeTab === 'activity' && h(DeliveryView, {
               batches,
               stats,
               blueBtn,
@@ -1200,7 +1195,7 @@
             }),
 
             // ======== CONTACT MODAL ========
-            ContactModal({
+            h(ContactModal, {
               contact: editingContact,
               show: showContactModal,
               onClose: () => { setShowContactModal(false); setEditingContact(null); },
