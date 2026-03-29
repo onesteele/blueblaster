@@ -4,7 +4,6 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>deliveredBlue CRM</title>
-    <!-- Version 3.0 - Professional UI Overhaul -->
 
     <!-- Supabase -->
     <script src="https://cdn.jsdelivr.net/npm/@supabase/supabase-js@2"></script>
@@ -16,34 +15,6 @@
     <style>
         @import url('https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700&display=swap');
 
-        :root {
-          --sidebar-bg: #111827;
-          --sidebar-width: 240px;
-          --topbar-height: 56px;
-          --content-bg: #f8f9fa;
-          --card-bg: #ffffff;
-          --border-color: #e5e7eb;
-          --text-primary: #111827;
-          --text-secondary: #6b7280;
-          --text-muted: #9ca3af;
-          --accent: #2563eb;
-          --accent-light: #eff6ff;
-          --accent-hover: #1d4ed8;
-          --success: #16a34a;
-          --success-bg: #f0fdf4;
-          --warning: #d97706;
-          --warning-bg: #fffbeb;
-          --danger: #dc2626;
-          --danger-bg: #fef2f2;
-          --info: #0284c7;
-          --info-bg: #f0f9ff;
-          --radius-sm: 4px;
-          --radius-md: 6px;
-          --radius-lg: 8px;
-          --shadow-sm: 0 1px 2px rgba(0,0,0,0.05);
-          --shadow-md: 0 1px 3px rgba(0,0,0,0.1), 0 1px 2px rgba(0,0,0,0.06);
-        }
-
         * {
             margin: 0;
             padding: 0;
@@ -51,15 +22,53 @@
         }
 
         body {
-            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-            background: var(--content-bg);
-            color: var(--text-primary);
+            font-family: 'Inter', 'SF Pro Display', -apple-system, BlinkMacSystemFont, sans-serif;
+            background: linear-gradient(135deg, #f5f7fa 0%, #e8ecf1 100%);
+            min-height: 100vh;
             -webkit-font-smoothing: antialiased;
             -moz-osx-font-smoothing: grayscale;
         }
 
+        body::before {
+            content: '';
+            position: fixed;
+            top: -50%;
+            right: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(0, 122, 255, 0.08) 0%, transparent 70%);
+            animation: float 20s ease-in-out infinite;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        body::after {
+            content: '';
+            position: fixed;
+            bottom: -50%;
+            left: -50%;
+            width: 100%;
+            height: 100%;
+            background: radial-gradient(circle, rgba(52, 199, 89, 0.06) 0%, transparent 70%);
+            animation: float 25s ease-in-out infinite reverse;
+            pointer-events: none;
+            z-index: 0;
+        }
+
+        @keyframes float {
+            0%, 100% { transform: translate(0, 0) rotate(0deg); }
+            33% { transform: translate(30px, -30px) rotate(5deg); }
+            66% { transform: translate(-20px, 20px) rotate(-3deg); }
+        }
+
+        @keyframes fadeIn {
+            from { opacity: 0; transform: translateY(10px); }
+            to { opacity: 1; transform: translateY(0); }
+        }
+
         #root {
-            height: 100vh;
+            position: relative;
+            z-index: 1;
         }
 
         .loading {
@@ -67,288 +76,116 @@
             align-items: center;
             justify-content: center;
             height: 100vh;
-            font-size: 16px;
-            color: var(--text-secondary);
-            font-weight: 400;
+            font-size: 18px;
+            color: #666;
         }
 
-        ::-webkit-scrollbar { width: 8px; }
+        /* Glass card base */
+        .glass-card {
+            background: rgba(255, 255, 255, 0.7);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 4px 30px rgba(0, 0, 0, 0.06);
+        }
+
+        /* Scrollbar */
+        ::-webkit-scrollbar { width: 6px; }
         ::-webkit-scrollbar-track { background: transparent; }
         ::-webkit-scrollbar-thumb {
-            background: #d1d5db;
+            background: rgba(0, 0, 0, 0.15);
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover { background: rgba(0, 0, 0, 0.25); }
+
+        /* Checkbox */
+        .checkbox {
+            width: 18px;
+            height: 18px;
             border-radius: 4px;
+            border: 2px solid #ccc;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            cursor: pointer;
+            transition: all 0.2s;
+            flex-shrink: 0;
         }
-        ::-webkit-scrollbar-thumb:hover { background: #9ca3af; }
-
-        /* --- Design System --- */
-        .card {
-          background: var(--card-bg);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg);
-          box-shadow: var(--shadow-sm);
-        }
-
-        .btn-primary {
-          padding: 8px 16px;
-          background: var(--accent);
-          color: #fff;
-          border: none;
-          border-radius: var(--radius-md);
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: inherit;
-          transition: background 0.15s;
-        }
-        .btn-primary:hover:not(:disabled) { background: var(--accent-hover); }
-        .btn-primary:disabled { opacity: 0.5; cursor: not-allowed; }
-
-        .btn-secondary {
-          padding: 8px 16px;
-          background: var(--card-bg);
-          color: var(--text-primary);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-          font-size: 13px;
-          font-weight: 500;
-          cursor: pointer;
-          font-family: inherit;
-          transition: background 0.15s;
-        }
-        .btn-secondary:hover:not(:disabled) { background: #f3f4f6; }
-
-        .btn-danger {
-          padding: 8px 16px;
-          background: var(--danger);
-          color: #fff;
-          border: none;
-          border-radius: var(--radius-md);
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: inherit;
-          transition: background 0.15s;
-        }
-        .btn-danger:hover:not(:disabled) { background: #b91c1c; }
-
-        .btn-success {
-          padding: 8px 16px;
-          background: var(--success);
-          color: #fff;
-          border: none;
-          border-radius: var(--radius-md);
-          font-size: 13px;
-          font-weight: 600;
-          cursor: pointer;
-          font-family: inherit;
-          transition: background 0.15s;
-        }
-        .btn-success:hover:not(:disabled) { background: #15803d; }
-
-        .badge {
-          display: inline-block;
-          padding: 2px 8px;
-          border-radius: 9999px;
-          font-size: 11px;
-          font-weight: 600;
-          line-height: 18px;
-        }
-        .badge-blue { background: var(--accent-light); color: var(--accent); }
-        .badge-green { background: var(--success-bg); color: var(--success); }
-        .badge-yellow { background: var(--warning-bg); color: var(--warning); }
-        .badge-red { background: var(--danger-bg); color: var(--danger); }
-        .badge-gray { background: #f3f4f6; color: var(--text-secondary); }
-
-        .data-table {
-          width: 100%;
-          border-collapse: collapse;
-        }
-        .data-table th {
-          text-align: left;
-          padding: 10px 12px;
-          font-size: 11px;
-          font-weight: 600;
-          color: var(--text-secondary);
-          text-transform: uppercase;
-          letter-spacing: 0.05em;
-          border-bottom: 1px solid var(--border-color);
-          background: #f9fafb;
-        }
-        .data-table td {
-          padding: 10px 12px;
-          font-size: 13px;
-          border-bottom: 1px solid var(--border-color);
-          vertical-align: middle;
-        }
-        .data-table tr:hover td {
-          background: #f9fafb;
-        }
-        .data-table tr:last-child td {
-          border-bottom: none;
+        .checkbox.checked {
+            background: linear-gradient(135deg, #007AFF 0%, #0051D5 100%);
+            border-color: #007AFF;
         }
 
-        input, textarea, select {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
-          transition: border-color 0.15s;
+        /* Contact list item */
+        .contact-list-item {
+            display: flex;
+            align-items: center;
+            padding: 10px 16px;
+            cursor: pointer;
+            transition: background 0.15s;
+            border-bottom: 1px solid rgba(0, 0, 0, 0.04);
+        }
+        .contact-list-item:hover {
+            background: rgba(0, 122, 255, 0.04);
+        }
+        .contact-list-item.selected {
+            background: rgba(0, 122, 255, 0.08);
         }
 
-        input:focus, textarea:focus, select:focus {
-          outline: none;
-          border-color: var(--accent);
-          box-shadow: 0 0 0 3px rgba(37, 99, 235, 0.1);
+        /* Sidebar */
+        .sidebar {
+            width: 280px;
+            flex-shrink: 0;
+            background: rgba(255, 255, 255, 0.5);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-right: 1px solid rgba(0, 0, 0, 0.06);
+            overflow-y: auto;
+            padding: 16px;
         }
 
-        button {
-          font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+        .main-content {
+            flex: 1;
+            overflow-y: auto;
         }
 
+        /* Modal */
         .modal-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.5);
-          z-index: 1000;
-          animation: fadeIn 0.15s ease-out;
+            position: fixed;
+            top: 0;
+            left: 0;
+            right: 0;
+            bottom: 0;
+            background: rgba(0, 0, 0, 0.4);
+            backdrop-filter: blur(4px);
+            z-index: 1000;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            animation: fadeIn 0.2s ease-out;
         }
 
         .modal-content {
-          background: white;
-          border-radius: var(--radius-lg);
-          max-width: 520px;
-          width: 90%;
-          max-height: 90vh;
-          overflow-y: auto;
-          position: absolute;
-          top: 50%;
-          left: 50%;
-          transform: translate(-50%, -50%);
-          animation: fadeIn 0.2s ease-out;
+            background: rgba(255, 255, 255, 0.95);
+            backdrop-filter: blur(20px) saturate(180%);
+            -webkit-backdrop-filter: blur(20px) saturate(180%);
+            border-radius: 16px;
+            border: 1px solid rgba(255, 255, 255, 0.3);
+            box-shadow: 0 20px 60px rgba(0, 0, 0, 0.15);
+            max-width: 520px;
+            width: 90%;
+            max-height: 90vh;
+            overflow-y: auto;
+            animation: fadeIn 0.25s ease-out;
         }
 
-        /* Drawer overlay */
-        .drawer-overlay {
-          position: fixed;
-          top: 0;
-          left: 0;
-          right: 0;
-          bottom: 0;
-          background: rgba(0, 0, 0, 0.3);
-          z-index: 900;
-          animation: fadeIn 0.15s ease-out;
+        input, textarea, select {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
 
-        /* Toast container */
-        .toast-container {
-          position: fixed;
-          top: 16px;
-          right: 16px;
-          z-index: 2000;
-          display: flex;
-          flex-direction: column;
-          gap: 8px;
-          pointer-events: none;
-        }
-        .toast {
-          pointer-events: auto;
-          padding: 12px 16px;
-          border-radius: var(--radius-md);
-          font-size: 13px;
-          font-weight: 500;
-          box-shadow: 0 4px 12px rgba(0,0,0,0.15);
-          animation: toastIn 0.25s ease-out;
-          display: flex;
-          align-items: center;
-          gap: 8px;
-          max-width: 360px;
-        }
-        .toast-success { background: #065f46; color: #fff; }
-        .toast-error { background: #991b1b; color: #fff; }
-        .toast-info { background: #1e40af; color: #fff; }
-        .toast-warning { background: #92400e; color: #fff; }
-
-        @keyframes fadeIn {
-          from { opacity: 0; }
-          to { opacity: 1; }
-        }
-
-        @keyframes toastIn {
-          from { opacity: 0; transform: translateX(40px); }
-          to { opacity: 1; transform: translateX(0); }
-        }
-
-        /* Sidebar nav items */
-        .nav-item {
-          display: flex;
-          align-items: center;
-          gap: 12px;
-          padding: 10px 16px;
-          margin: 2px 8px;
-          border-radius: var(--radius-md);
-          color: #9ca3af;
-          cursor: pointer;
-          font-size: 14px;
-          font-weight: 500;
-          transition: all 0.15s;
-          border-left: 3px solid transparent;
-          text-decoration: none;
-        }
-        .nav-item:hover {
-          color: #d1d5db;
-          background: rgba(255,255,255,0.05);
-        }
-        .nav-item.active {
-          color: #60a5fa;
-          background: rgba(37, 99, 235, 0.1);
-          border-left-color: #60a5fa;
-        }
-        .nav-icon {
-          width: 20px;
-          text-align: center;
-          font-size: 15px;
-          flex-shrink: 0;
-        }
-
-        /* Form input styling */
-        .form-input {
-          width: 100%;
-          padding: 8px 12px;
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-md);
-          font-size: 13px;
-          color: var(--text-primary);
-          background: #fff;
-        }
-        .form-label {
-          display: block;
-          font-size: 12px;
-          font-weight: 600;
-          color: var(--text-secondary);
-          margin-bottom: 4px;
-        }
-        .form-group {
-          margin-bottom: 16px;
-        }
-
-        /* KPI card */
-        .kpi-card {
-          padding: 20px;
-          background: var(--card-bg);
-          border: 1px solid var(--border-color);
-          border-radius: var(--radius-lg);
-        }
-        .kpi-value {
-          font-size: 28px;
-          font-weight: 700;
-          letter-spacing: -0.02em;
-          line-height: 1;
-          margin-bottom: 4px;
-        }
-        .kpi-label {
-          font-size: 12px;
-          color: var(--text-secondary);
-          font-weight: 500;
+        button {
+            font-family: 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
         }
     </style>
 </head>
@@ -358,13 +195,13 @@
     </div>
 
     <script>
-        // Auth check - redirect to login if not authenticated
+        // Auth check
         const authToken = sessionStorage.getItem('imessage_crm_auth');
         if (authToken !== 'true') {
             window.location.href = 'https://blueblaster.profit-insiders.com/';
         }
 
-        // Logout function - globally accessible
+        // Logout
         window.handleLogout = function() {
             if (confirm('Are you sure you want to sign out?')) {
                 sessionStorage.removeItem('imessage_crm_auth');
@@ -380,45 +217,9 @@
         const supabaseClient = createClient(SUPABASE_URL, SUPABASE_ANON_KEY);
         const h = React.createElement;
 
-        // ======== Toast System ========
-        let toastIdCounter = 0;
-        const toastListeners = [];
-        function showToast(message, type) {
-          type = type || 'info';
-          var id = ++toastIdCounter;
-          toastListeners.forEach(function(fn) { fn({ id: id, message: message, type: type }); });
-          return id;
-        }
-        window.showToast = showToast;
-
-        function ToastContainer() {
-          var ref = useState([]);
-          var toasts = ref[0];
-          var setToasts = ref[1];
-
-          useEffect(function() {
-            var handler = function(toast) {
-              setToasts(function(prev) { return prev.concat([toast]); });
-              setTimeout(function() {
-                setToasts(function(prev) { return prev.filter(function(t) { return t.id !== toast.id; }); });
-              }, 3500);
-            };
-            toastListeners.push(handler);
-            return function() {
-              var idx = toastListeners.indexOf(handler);
-              if (idx > -1) toastListeners.splice(idx, 1);
-            };
-          }, []);
-
-          return h('div', { className: 'toast-container' },
-            toasts.map(function(t) {
-              return h('div', { key: t.id, className: 'toast toast-' + t.type }, t.message);
-            })
-          );
-        }
-
+        // ======== APP ========
         function App() {
-          const [activeTab, setActiveTab] = useState('dashboard');
+          const [activeTab, setActiveTab] = useState('contacts');
           const [contacts, setContacts] = useState([]);
           const [lists, setLists] = useState([]);
           const [selectedList, setSelectedList] = useState('all');
@@ -459,12 +260,11 @@
 
           if (error) {
             return h('div', { style: { padding: '40px', textAlign: 'center' }},
-              h('h2', { style: { color: 'var(--danger)', marginBottom: '16px' }}, 'Error'),
-              h('p', { style: { color: 'var(--text-secondary)' }}, error),
+              h('h2', { style: { color: '#ff3b30', marginBottom: '16px' }}, 'Error'),
+              h('p', { style: { color: '#666' }}, error),
               h('button', {
                 onClick: () => { setError(null); window.location.reload(); },
-                className: 'btn-primary',
-                style: { marginTop: '20px', padding: '12px 24px' }
+                style: { marginTop: '20px', padding: '12px 24px', background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)', color: '#fff', border: 'none', borderRadius: '12px', cursor: 'pointer', fontSize: '15px', fontWeight: '600' }
               }, 'Reload')
             );
           }
@@ -531,183 +331,7 @@
             } catch (err) { console.error('Error:', err); }
           };
 
-          const handleCSVUpload = async (e) => {
-            const file = e.target.files[0];
-            if (!file) return;
-            try {
-              const text = await file.text();
-              const lines = text.split('\n');
-
-              let headerRowIndex = 0;
-              const phoneKeywords = ['phone', 'mobile', 'cell', 'number', 'tel', 'country'];
-              for (let i = 0; i < Math.min(lines.length, 10); i++) {
-                const lowLine = lines[i].toLowerCase();
-                if (phoneKeywords.some(kw => lowLine.includes(kw))) {
-                  headerRowIndex = i;
-                  break;
-                }
-              }
-
-              const rawHeaders = lines[headerRowIndex].split(',').map(h => h.trim().replace(/['"]/g, ''));
-              const headers = rawHeaders.map(h => h.toLowerCase().replace(/[\s-]/g, '_').replace(/#/g, ''));
-              const newContacts = [];
-
-              console.log('CSV Header row index:', headerRowIndex);
-              console.log('CSV Headers:', rawHeaders, ' -> normalized:', headers);
-
-              for (let i = headerRowIndex + 1; i < lines.length; i++) {
-                if (!lines[i].trim()) continue;
-                const values = lines[i].split(',').map(v => v.trim().replace(/['"]/g, ''));
-                const contact = {};
-                headers.forEach((header, index) => { contact[header] = values[index]; });
-
-                console.log('Row', i, ':', contact);
-
-                const phoneVal = contact.phone || contact.phone_number || contact.phonenumber ||
-                  contact.mobile || contact.cell || contact.number || contact.tel || contact.telephone || '';
-
-                const ccVal = contact.country_code || contact.countrycode || contact.cc ||
-                  contact.country || contact.code || contact.dial_code || contact.dialcode || '';
-
-                const firstName = contact.first_name || contact.firstname || contact.first || contact.name || '';
-                const lastName = contact.last_name || contact.lastname || contact.last || contact.surname || '';
-
-                let rawPhone = '';
-                if (ccVal && phoneVal) {
-                  const cc = ccVal.toString().trim().replace(/[^\d+]/g, '');
-                  const num = phoneVal.toString().trim().replace(/[^\d]/g, '');
-                  rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + num;
-                } else if (phoneVal) {
-                  rawPhone = phoneVal.toString().trim();
-                }
-
-                if (!rawPhone && values.length >= 2) {
-                  const col0 = (values[0] || '').trim();
-                  const col1 = (values[1] || '').trim();
-                  const col0Digits = col0.replace(/[^\d]/g, '');
-                  const col1Digits = col1.replace(/[^\d]/g, '');
-                  if (col0Digits.length <= 4 && col1Digits.length >= 7) {
-                    const cc = col0.replace(/[^\d+]/g, '');
-                    rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + col1Digits;
-                  } else if (col0Digits.length >= 7) {
-                    rawPhone = col0;
-                  }
-                }
-
-                if (rawPhone) {
-                  newContacts.push({
-                    phone: normalizePhoneNumber(rawPhone, csvCountryCode),
-                    first_name: firstName,
-                    last_name: lastName,
-                    metadata: contact
-                  });
-                }
-              }
-
-              console.log('Parsed contacts:', newContacts.length, newContacts.slice(0, 3));
-
-              const { error } = await supabaseClient.from('contacts').insert(newContacts);
-              if (!error) {
-                fetchContacts();
-                showToast('Successfully imported ' + newContacts.length + ' contacts', 'success');
-              } else {
-                showToast('Error importing contacts: ' + error.message, 'error');
-              }
-            } catch (err) {
-              showToast('Error reading file: ' + err.message, 'error');
-            }
-          };
-
-          const handleSendBlast = async (customMessage = null, customContacts = null) => {
-            console.log('handleSendBlast called with:', { customMessage, customContacts });
-
-            const message = customMessage || messageTemplate;
-            const blastContacts = customContacts || selectedContacts;
-
-            console.log('After defaults:', { message, contacts: blastContacts });
-
-            if (!message || blastContacts.length === 0) {
-              showToast('Please enter a message and select contacts', 'warning');
-              return;
-            }
-
-            setSending(true);
-            try {
-              const { data: batch, error: batchError } = await supabaseClient
-                .from('message_batches')
-                .insert({
-                  platform: platform,
-                  message_template: message,
-                  total_messages: blastContacts.length,
-                  status: 'pending'
-                }).select().single();
-
-              if (batchError) throw batchError;
-
-              const messages = blastContacts.map(contact => ({
-                batch_id: batch.id,
-                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
-                phone_number: normalizePhoneNumber(contact.phone).replace('+', ''),
-                message: personalizeMessage(message, contact),
-                status: 'queued'
-              }));
-
-              const { error: messagesError } = await supabaseClient.from('messages').insert(messages);
-              if (messagesError) throw messagesError;
-
-              await supabaseClient.from('message_batches').update({ status: 'sending' }).eq('id', batch.id);
-
-              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
-                batchId: batch.id,
-                supabaseUrl: SUPABASE_URL,
-                supabaseKey: SUPABASE_ANON_KEY,
-                timeout: 15,
-                skipOnFailure: true,
-                retryCount: 1
-              }))}`;
-
-              window.location.href = shortcutUrl;
-              fetchBatches();
-              fetchStats();
-              setActiveTab('activity');
-
-              setTimeout(() => {
-                showToast('Batch created! Opening Shortcuts app...', 'success');
-              }, 500);
-            } catch (err) {
-              showToast('Error: ' + err.message, 'error');
-            } finally {
-              setSending(false);
-            }
-          };
-
-          window.handleSendBlast = handleSendBlast;
-
-          const personalizeMessage = (template, contact) => {
-            let message = template;
-            message = message.replace(/\{\{first_name\}\}/g, contact.first_name || '');
-            message = message.replace(/\{\{last_name\}\}/g, contact.last_name || '');
-            message = message.replace(/\{\{phone\}\}/g, contact.phone || '');
-            if (contact.metadata) {
-              Object.keys(contact.metadata).forEach(key => {
-                message = message.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contact.metadata[key] || '');
-              });
-            }
-            return message;
-          };
-
-          const toggleContact = (contact) => {
-            setSelectedContacts(prev => {
-              const exists = prev.find(c => c.id === contact.id);
-              return exists ? prev.filter(c => c.id !== contact.id) : [...prev, contact];
-            });
-          };
-
-          const selectAll = () => {
-            const filtered = getFilteredContacts();
-            setSelectedContacts(prev => prev.length === filtered.length ? [] : [...filtered]);
-          };
-
+          // ======== PHONE NUMBER HELPERS ========
           const normalizePhoneNumber = (phone, defaultCountryCode = '+1') => {
             let cleaned = phone.replace(/[^\d+]/g, '');
             if (cleaned.indexOf('+') > 0) {
@@ -813,6 +437,212 @@
             return '+' + digits;
           };
 
+          const formatNumberForCopy = (phone) => {
+            if (!phone) return '';
+            const cleaned = phone.replace(/\s/g, '');
+            const digits = cleaned.replace(/[^\d]/g, '');
+            if (digits.length === 11 && digits.startsWith('1')) {
+              return '+1 ' + digits.substring(1, 4) + ' ' + digits.substring(4, 7) + ' ' + digits.substring(7);
+            } else if (digits.length === 10) {
+              return '+1 ' + digits.substring(0, 3) + ' ' + digits.substring(3, 6) + ' ' + digits.substring(6);
+            }
+            else if (digits.startsWith('44') && digits.length >= 12) {
+              return '+44 ' + digits.substring(2, 6) + ' ' + digits.substring(6, 9) + ' ' + digits.substring(9);
+            }
+            else if (digits.startsWith('971') && digits.length >= 12) {
+              return '+971 ' + digits.substring(3, 5) + ' ' + digits.substring(5, 8) + ' ' + digits.substring(8);
+            }
+            else if (digits.length > 10) {
+              let countryCode = digits.substring(0, 2);
+              let rest = digits.substring(2);
+              let formatted = '+' + countryCode;
+              for (let i = 0; i < rest.length; i += 3) {
+                formatted += ' ' + rest.substring(i, i + 3);
+              }
+              return formatted.trim();
+            }
+            return '+' + digits;
+          };
+
+          // ======== CSV IMPORT ========
+          const handleCSVUpload = async (e) => {
+            const file = e.target.files[0];
+            if (!file) return;
+            try {
+              const text = await file.text();
+              const lines = text.split('\n');
+
+              let headerRowIndex = 0;
+              const phoneKeywords = ['phone', 'mobile', 'cell', 'number', 'tel', 'country'];
+              for (let i = 0; i < Math.min(lines.length, 10); i++) {
+                const lowLine = lines[i].toLowerCase();
+                if (phoneKeywords.some(kw => lowLine.includes(kw))) {
+                  headerRowIndex = i;
+                  break;
+                }
+              }
+
+              const rawHeaders = lines[headerRowIndex].split(',').map(h => h.trim().replace(/['"]/g, ''));
+              const headers = rawHeaders.map(h => h.toLowerCase().replace(/[\s-]/g, '_').replace(/#/g, ''));
+              const newContacts = [];
+
+              console.log('CSV Header row index:', headerRowIndex);
+              console.log('CSV Headers:', rawHeaders, ' -> normalized:', headers);
+
+              for (let i = headerRowIndex + 1; i < lines.length; i++) {
+                if (!lines[i].trim()) continue;
+                const values = lines[i].split(',').map(v => v.trim().replace(/['"]/g, ''));
+                const contact = {};
+                headers.forEach((header, index) => { contact[header] = values[index]; });
+
+                console.log('Row', i, ':', contact);
+
+                const phoneVal = contact.phone || contact.phone_number || contact.phonenumber ||
+                  contact.mobile || contact.cell || contact.number || contact.tel || contact.telephone || '';
+
+                const ccVal = contact.country_code || contact.countrycode || contact.cc ||
+                  contact.country || contact.code || contact.dial_code || contact.dialcode || '';
+
+                const firstName = contact.first_name || contact.firstname || contact.first || contact.name || '';
+                const lastName = contact.last_name || contact.lastname || contact.last || contact.surname || '';
+
+                let rawPhone = '';
+                if (ccVal && phoneVal) {
+                  const cc = ccVal.toString().trim().replace(/[^\d+]/g, '');
+                  const num = phoneVal.toString().trim().replace(/[^\d]/g, '');
+                  rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + num;
+                } else if (phoneVal) {
+                  rawPhone = phoneVal.toString().trim();
+                }
+
+                if (!rawPhone && values.length >= 2) {
+                  const col0 = (values[0] || '').trim();
+                  const col1 = (values[1] || '').trim();
+                  const col0Digits = col0.replace(/[^\d]/g, '');
+                  const col1Digits = col1.replace(/[^\d]/g, '');
+                  if (col0Digits.length <= 4 && col1Digits.length >= 7) {
+                    const cc = col0.replace(/[^\d+]/g, '');
+                    rawPhone = (cc.startsWith('+') ? cc : '+' + cc) + col1Digits;
+                  } else if (col0Digits.length >= 7) {
+                    rawPhone = col0;
+                  }
+                }
+
+                if (rawPhone) {
+                  newContacts.push({
+                    phone: normalizePhoneNumber(rawPhone, csvCountryCode),
+                    first_name: firstName,
+                    last_name: lastName,
+                    metadata: contact
+                  });
+                }
+              }
+
+              console.log('Parsed contacts:', newContacts.length, newContacts.slice(0, 3));
+
+              const { error } = await supabaseClient.from('contacts').insert(newContacts);
+              if (!error) {
+                fetchContacts();
+                alert('Successfully imported ' + newContacts.length + ' contacts');
+              } else {
+                alert('Error importing contacts: ' + error.message);
+              }
+            } catch (err) {
+              alert('Error reading file: ' + err.message);
+            }
+          };
+
+          // ======== SEND BLAST ========
+          const handleSendBlast = async (customMessage = null, customContacts = null) => {
+            console.log('handleSendBlast called with:', { customMessage, customContacts });
+
+            const message = customMessage || messageTemplate;
+            const blastContacts = customContacts || selectedContacts;
+
+            console.log('After defaults:', { message, contacts: blastContacts });
+
+            if (!message || blastContacts.length === 0) {
+              alert('Please enter a message and select contacts');
+              return;
+            }
+
+            setSending(true);
+            try {
+              const { data: batch, error: batchError } = await supabaseClient
+                .from('message_batches')
+                .insert({
+                  platform: platform,
+                  message_template: message,
+                  total_messages: blastContacts.length,
+                  status: 'pending'
+                }).select().single();
+
+              if (batchError) throw batchError;
+
+              const messages = blastContacts.map(contact => ({
+                batch_id: batch.id,
+                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
+                phone_number: normalizePhoneNumber(contact.phone).replace('+', ''),
+                message: personalizeMessage(message, contact),
+                status: 'queued'
+              }));
+
+              const { error: messagesError } = await supabaseClient.from('messages').insert(messages);
+              if (messagesError) throw messagesError;
+
+              await supabaseClient.from('message_batches').update({ status: 'sending' }).eq('id', batch.id);
+
+              const shortcutUrl = `shortcuts://run-shortcut?name=iMessage%20Blaster&input=${encodeURIComponent(JSON.stringify({
+                batchId: batch.id,
+                supabaseUrl: SUPABASE_URL,
+                supabaseKey: SUPABASE_ANON_KEY,
+                timeout: 15,
+                skipOnFailure: true,
+                retryCount: 1
+              }))}`;
+
+              window.location.href = shortcutUrl;
+              fetchBatches();
+              fetchStats();
+              setActiveTab('activity');
+
+              setTimeout(() => {
+                alert('Batch created! Opening Shortcuts app...');
+              }, 500);
+            } catch (err) {
+              alert('Error: ' + err.message);
+            } finally {
+              setSending(false);
+            }
+          };
+
+          window.handleSendBlast = handleSendBlast;
+
+          const personalizeMessage = (template, contact) => {
+            let message = template;
+            message = message.replace(/\{\{first_name\}\}/g, contact.first_name || '');
+            message = message.replace(/\{\{last_name\}\}/g, contact.last_name || '');
+            message = message.replace(/\{\{phone\}\}/g, contact.phone || '');
+            if (contact.metadata) {
+              Object.keys(contact.metadata).forEach(key => {
+                message = message.replace(new RegExp(`\\{\\{${key}\\}\\}`, 'g'), contact.metadata[key] || '');
+              });
+            }
+            return message;
+          };
+
+          const toggleContact = (contact) => {
+            setSelectedContacts(prev => {
+              const exists = prev.find(c => c.id === contact.id);
+              return exists ? prev.filter(c => c.id !== contact.id) : [...prev, contact];
+            });
+          };
+
+          const selectAll = () => {
+            const filtered = getFilteredContacts();
+            setSelectedContacts(prev => prev.length === filtered.length ? [] : [...filtered]);
+          };
+
           const getFilteredContacts = () => {
             let filtered = contacts;
             if (selectedList !== 'all') {
@@ -833,6 +663,7 @@
             return filtered;
           };
 
+          // ======== CONTACT CRUD ========
           const saveContact = async (contactData) => {
             try {
               const normalizedData = {
@@ -854,9 +685,9 @@
               fetchContacts();
               setShowContactModal(false);
               setEditingContact(null);
-              showToast(editingContact ? 'Contact updated' : 'Contact created', 'success');
+              alert(editingContact ? 'Contact updated' : 'Contact created');
             } catch (err) {
-              showToast('Error saving contact: ' + err.message, 'error');
+              alert('Error saving contact: ' + err.message);
             }
           };
 
@@ -870,9 +701,9 @@
               if (error) throw error;
               fetchContacts();
               setSelectedContact(null);
-              showToast('Contact deleted', 'success');
+              alert('Contact deleted');
             } catch (err) {
-              showToast('Error deleting contact: ' + err.message, 'error');
+              alert('Error deleting contact: ' + err.message);
             }
           };
 
@@ -896,16 +727,17 @@
                   if (!updateError) updated++;
                 }
               }
-              showToast('Updated ' + updated + ' phone numbers with proper iMessage formatting', 'success');
+              alert('Updated ' + updated + ' phone numbers with proper iMessage formatting');
               fetchContacts();
             } catch (err) {
-              showToast('Error updating phone numbers: ' + err.message, 'error');
+              alert('Error updating phone numbers: ' + err.message);
               console.error('Error:', err);
             }
           };
 
           window.reNormalizeAllPhoneNumbers = reNormalizeAllPhoneNumbers;
 
+          // ======== TAG HELPERS ========
           const addTagToContact = async (contactId, tag) => {
             const contact = contacts.find(c => c.id === contactId);
             const currentTags = contact.metadata?.tags || [];
@@ -922,7 +754,7 @@
               if (error) throw error;
               fetchContacts();
             } catch (err) {
-              showToast('Error adding tag: ' + err.message, 'error');
+              alert('Error adding tag: ' + err.message);
             }
           };
 
@@ -941,10 +773,11 @@
               if (error) throw error;
               fetchContacts();
             } catch (err) {
-              showToast('Error removing tag: ' + err.message, 'error');
+              alert('Error removing tag: ' + err.message);
             }
           };
 
+          // ======== DELIVERY STATUS ========
           const markContactDeliveryStatus = async (contactId, status) => {
             const contact = contacts.find(c => c.id === contactId);
             if (!contact) return;
@@ -985,10 +818,10 @@
                   }
                 }
               }
-              showToast('Marked ' + marked + ' contact(s) as undeliverable', 'warning');
+              alert('Marked ' + marked + ' contact(s) as undeliverable');
               fetchContacts();
             } catch (err) {
-              showToast('Error marking contacts: ' + err.message, 'error');
+              alert('Error marking contacts: ' + err.message);
             }
           };
 
@@ -1000,535 +833,389 @@
 
           const filteredContacts = getFilteredContacts();
 
-          // Helper for formatting phone numbers for copy
-          const formatNumberForCopy = (phone) => {
-            if (!phone) return '';
-            const cleaned = phone.replace(/\s/g, '');
-            const digits = cleaned.replace(/[^\d]/g, '');
-            if (digits.length === 11 && digits.startsWith('1')) {
-              return '+1 ' + digits.substring(1, 4) + ' ' + digits.substring(4, 7) + ' ' + digits.substring(7);
-            } else if (digits.length === 10) {
-              return '+1 ' + digits.substring(0, 3) + ' ' + digits.substring(3, 6) + ' ' + digits.substring(6);
-            }
-            else if (digits.startsWith('44') && digits.length >= 12) {
-              return '+44 ' + digits.substring(2, 6) + ' ' + digits.substring(6, 9) + ' ' + digits.substring(9);
-            }
-            else if (digits.startsWith('971') && digits.length >= 12) {
-              return '+971 ' + digits.substring(3, 5) + ' ' + digits.substring(5, 8) + ' ' + digits.substring(8);
-            }
-            else if (digits.length > 10) {
-              let countryCode = digits.substring(0, 2);
-              let rest = digits.substring(2);
-              let formatted = '+' + countryCode;
-              for (let i = 0; i < rest.length; i += 3) {
-                formatted += ' ' + rest.substring(i, i + 3);
-              }
-              return formatted.trim();
-            }
-            return '+' + digits;
-          };
-
-          // Nav items config
-          const navItems = [
-            { id: 'dashboard', label: 'Dashboard', icon: '\u25A6' },
-            { id: 'contacts', label: 'Contacts', icon: '\u2630' },
-            { id: 'compose', label: 'Compose', icon: '\u270E' },
-            { id: 'campaigns', label: 'Campaigns', icon: '\u25B6' },
-            { id: 'templates', label: 'Templates', icon: '\u2756' },
-            { id: 'activity', label: 'Activity', icon: '\u2261' }
+          // ======== TAB CONFIG ========
+          const tabs = [
+            { id: 'contacts', label: 'Contacts' },
+            { id: 'campaigns', label: 'Campaigns' },
+            { id: 'templates', label: 'Templates' },
+            { id: 'quicksend', label: 'Quick Send' },
+            { id: 'compose', label: 'Compose' },
+            { id: 'activity', label: 'Activity' }
           ];
 
-          // Page titles
-          const pageTitles = {
-            dashboard: 'Dashboard',
-            contacts: 'Contacts',
-            compose: 'Compose Message',
-            campaigns: 'Campaigns',
-            templates: 'Templates',
-            activity: 'Activity'
+          // ======== BLUE BUTTON STYLE ========
+          const blueBtn = {
+            padding: '10px 20px',
+            background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)',
+            color: '#fff',
+            border: 'none',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: '600',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontFamily: 'inherit'
           };
 
-          // Count stats for dashboard
-          const totalContacts = contacts.length;
-          const deliverableCount = contacts.filter(c => c.metadata?.delivery_status !== 'undeliverable').length;
-          const undeliverableCount = contacts.filter(c => c.metadata?.delivery_status === 'undeliverable').length;
-          const totalMessagesSent = stats.completed;
+          const secondaryBtn = {
+            padding: '10px 20px',
+            background: 'rgba(0, 0, 0, 0.05)',
+            color: '#333',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: '10px',
+            fontSize: '14px',
+            fontWeight: '500',
+            cursor: 'pointer',
+            transition: 'all 0.2s',
+            fontFamily: 'inherit'
+          };
 
-          return h('div', { style: { display: 'flex', height: '100vh', overflow: 'hidden' }},
-            // Toast container
-            h(ToastContainer),
+          const inputStyle = {
+            width: '100%',
+            padding: '10px 14px',
+            border: '1px solid rgba(0, 0, 0, 0.1)',
+            borderRadius: '10px',
+            fontSize: '14px',
+            background: 'rgba(255, 255, 255, 0.8)',
+            outline: 'none',
+            fontFamily: 'inherit'
+          };
 
-            // ===== LEFT SIDEBAR =====
-            h('div', { style: { width: 'var(--sidebar-width)', background: 'var(--sidebar-bg)', display: 'flex', flexDirection: 'column', flexShrink: 0 }},
-              // Logo
-              h('div', { style: { padding: '20px 16px', display: 'flex', alignItems: 'center', gap: '10px', borderBottom: '1px solid rgba(255,255,255,0.08)' }},
-                h('div', { style: { width: '32px', height: '32px', borderRadius: '8px', background: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0 }},
-                  h('svg', { width: '18', height: '18', viewBox: '0 0 24 24', fill: 'none' },
+          const labelStyle = {
+            display: 'block',
+            fontSize: '13px',
+            fontWeight: '600',
+            color: '#555',
+            marginBottom: '6px'
+          };
+
+          // ======== RENDER ========
+          return h('div', { style: { maxWidth: '1400px', margin: '0 auto', padding: '60px 22px', animation: 'fadeIn 0.5s ease-out' }},
+
+            // HEADER
+            h('div', { style: { textAlign: 'center', marginBottom: '32px' }},
+              h('div', { style: { display: 'inline-flex', alignItems: 'center', gap: '16px', marginBottom: '8px' }},
+                h('div', { style: { width: '64px', height: '64px', borderRadius: '16px', background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)', display: 'flex', alignItems: 'center', justifyContent: 'center', boxShadow: '0 4px 20px rgba(0, 122, 255, 0.3)' }},
+                  h('svg', { width: '32', height: '32', viewBox: '0 0 24 24', fill: 'none' },
                     h('path', { d: 'M20 2H4C2.9 2 2 2.9 2 4V22L6 18H20C21.1 18 22 17.1 22 16V4C22 2.9 21.1 2 20 2Z', fill: 'white' })
                   )
                 ),
-                h('span', { style: { color: '#ffffff', fontSize: '15px', fontWeight: '700', letterSpacing: '-0.02em' }}, 'deliveredBlue')
-              ),
-
-              // Navigation
-              h('nav', { style: { flex: 1, paddingTop: '12px', overflowY: 'auto' }},
-                navItems.map(item =>
-                  h('div', {
-                    key: item.id,
-                    className: 'nav-item' + (activeTab === item.id ? ' active' : ''),
-                    onClick: () => setActiveTab(item.id)
-                  },
-                    h('span', { className: 'nav-icon' }, item.icon),
-                    item.label
-                  )
+                h('div', { style: { textAlign: 'left' }},
+                  h('h1', { style: { fontSize: '42px', fontWeight: '700', letterSpacing: '-0.02em', background: 'linear-gradient(135deg, #007AFF, #0051D5)', WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}, 'deliveredBlue'),
+                  h('p', { style: { fontSize: '15px', color: '#888', fontWeight: '400' }}, 'iMessage CRM')
                 )
               ),
-
-              // Sign Out
-              h('div', { style: { padding: '12px 8px', borderTop: '1px solid rgba(255,255,255,0.08)' }},
-                h('div', {
-                  className: 'nav-item',
+              h('div', { style: { marginTop: '12px' }},
+                h('button', {
                   onClick: () => window.handleLogout(),
-                  style: { margin: 0 }
-                },
-                  h('span', { className: 'nav-icon' }, '\u2192'),
-                  'Sign Out'
-                )
+                  style: { ...secondaryBtn, padding: '8px 16px', fontSize: '13px' }
+                }, 'Sign Out')
               )
             ),
 
-            // ===== MAIN AREA =====
-            h('div', { style: { flex: 1, display: 'flex', flexDirection: 'column', overflow: 'hidden' }},
-              // Top bar
-              h('div', { style: { height: 'var(--topbar-height)', background: 'var(--card-bg)', borderBottom: '1px solid var(--border-color)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '0 24px', flexShrink: 0 }},
-                h('h1', { style: { fontSize: '16px', fontWeight: '700', color: 'var(--text-primary)' }}, pageTitles[activeTab] || 'Dashboard'),
-                h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' }},
-                  activeTab === 'contacts' && h('button', {
-                    className: 'btn-primary',
-                    onClick: () => { setEditingContact(null); setShowContactModal(true); }
+            // HORIZONTAL TAB BAR
+            h('div', { className: 'glass-card', style: { display: 'flex', justifyContent: 'center', gap: '4px', padding: '6px', marginBottom: '24px' }},
+              tabs.map(tab =>
+                h('button', {
+                  key: tab.id,
+                  onClick: () => setActiveTab(tab.id),
+                  style: {
+                    padding: '10px 22px',
+                    background: activeTab === tab.id ? 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)' : 'transparent',
+                    color: activeTab === tab.id ? '#fff' : '#666',
+                    border: 'none',
+                    borderRadius: '10px',
+                    fontSize: '14px',
+                    fontWeight: activeTab === tab.id ? '600' : '500',
+                    cursor: 'pointer',
+                    transition: 'all 0.2s',
+                    fontFamily: 'inherit'
+                  }
+                }, tab.label)
+              )
+            ),
+
+            // ======== CONTACTS TAB ========
+            activeTab === 'contacts' && h('div', { style: { display: 'flex', gap: '16px', height: 'calc(100vh - 320px)' }},
+
+              // LEFT SIDEBAR
+              h('div', { className: 'sidebar glass-card', style: { width: '280px', flexShrink: 0, padding: '16px', overflowY: 'auto', borderRadius: '16px' }},
+                h('h3', { style: { fontSize: '15px', fontWeight: '600', marginBottom: '12px', color: '#333' }}, 'Lists'),
+                lists.map(list =>
+                  h('div', {
+                    key: list.id,
+                    onClick: () => setSelectedList(list.id),
+                    style: {
+                      padding: '10px 12px',
+                      borderRadius: '8px',
+                      cursor: 'pointer',
+                      marginBottom: '4px',
+                      background: selectedList === list.id ? 'rgba(0, 122, 255, 0.1)' : 'transparent',
+                      color: selectedList === list.id ? '#007AFF' : '#555',
+                      fontWeight: selectedList === list.id ? '600' : '400',
+                      fontSize: '14px',
+                      display: 'flex',
+                      justifyContent: 'space-between',
+                      alignItems: 'center',
+                      transition: 'all 0.15s'
+                    }
+                  },
+                    h('span', null, list.name),
+                    h('span', { style: { fontSize: '12px', opacity: 0.6 }}, list.count)
+                  )
+                ),
+
+                // Delivery Status Filter
+                h('div', { style: { marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.06)' }},
+                  h('h3', { style: { fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Delivery Status'),
+                  ['all', 'deliverable', 'undeliverable'].map(filter =>
+                    h('div', {
+                      key: filter,
+                      onClick: () => setDeliveryFilter(filter),
+                      style: {
+                        padding: '8px 12px',
+                        borderRadius: '8px',
+                        cursor: 'pointer',
+                        marginBottom: '4px',
+                        background: deliveryFilter === filter ? 'rgba(0, 122, 255, 0.1)' : 'transparent',
+                        color: deliveryFilter === filter ? '#007AFF' : '#555',
+                        fontWeight: deliveryFilter === filter ? '600' : '400',
+                        fontSize: '13px',
+                        display: 'flex',
+                        justifyContent: 'space-between',
+                        alignItems: 'center'
+                      }
+                    },
+                      h('span', null, filter === 'all' ? 'All' : filter === 'deliverable' ? 'Deliverable' : 'Undeliverable'),
+                      h('span', { style: { fontSize: '12px', opacity: 0.6 }},
+                        filter === 'all' ? contacts.length :
+                        filter === 'deliverable' ? contacts.filter(c => c.metadata?.delivery_status !== 'undeliverable').length :
+                        contacts.filter(c => c.metadata?.delivery_status === 'undeliverable').length
+                      )
+                    )
+                  )
+                ),
+
+                // Country code dropdown
+                h('div', { style: { marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.06)' }},
+                  h('h3', { style: { fontSize: '13px', fontWeight: '600', marginBottom: '10px', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'CSV Import Country'),
+                  h('select', {
+                    value: csvCountryCode,
+                    onChange: (e) => setCsvCountryCode(e.target.value),
+                    style: { ...inputStyle, fontSize: '13px', padding: '8px 10px' }
+                  },
+                    h('option', { value: '+1' }, '+1 US/Canada'),
+                    h('option', { value: '+44' }, '+44 UK'),
+                    h('option', { value: '+61' }, '+61 Australia'),
+                    h('option', { value: '+971' }, '+971 UAE'),
+                    h('option', { value: '+52' }, '+52 Mexico'),
+                    h('option', { value: '+91' }, '+91 India'),
+                    h('option', { value: '+86' }, '+86 China'),
+                    h('option', { value: '+81' }, '+81 Japan'),
+                    h('option', { value: '+33' }, '+33 France'),
+                    h('option', { value: '+49' }, '+49 Germany'),
+                    h('option', { value: '+34' }, '+34 Spain'),
+                    h('option', { value: '+39' }, '+39 Italy'),
+                    h('option', { value: '+55' }, '+55 Brazil')
+                  )
+                ),
+
+                // Actions
+                h('div', { style: { marginTop: '20px', paddingTop: '16px', borderTop: '1px solid rgba(0,0,0,0.06)' }},
+                  h('button', {
+                    onClick: () => { setEditingContact(null); setShowContactModal(true); },
+                    style: { ...blueBtn, width: '100%', marginBottom: '8px', fontSize: '13px', padding: '8px 14px' }
                   }, '+ New Contact'),
-                  activeTab === 'contacts' && selectedContacts.length > 0 && h('button', {
-                    className: 'btn-primary',
-                    onClick: () => setActiveTab('compose')
-                  }, 'Send to ' + selectedContacts.length),
-                  activeTab === 'campaigns' && h('button', {
-                    className: 'btn-primary',
-                    onClick: () => setShowCampaignModal(true)
-                  }, '+ New Campaign')
+                  h('label', { style: { ...secondaryBtn, display: 'block', textAlign: 'center', marginBottom: '8px', fontSize: '13px', padding: '8px 14px' }},
+                    'Import CSV',
+                    h('input', { type: 'file', accept: '.csv', onChange: handleCSVUpload, style: { display: 'none' }})
+                  ),
+                  h('button', {
+                    onClick: () => {
+                      const numbers = contacts.map(c => formatNumberForCopy(c.phone)).join('\n');
+                      navigator.clipboard.writeText(numbers).then(() => {
+                        alert('Copied ' + contacts.length + ' phone numbers');
+                      });
+                    },
+                    style: { ...secondaryBtn, width: '100%', fontSize: '13px', padding: '8px 14px' }
+                  }, 'Export All Numbers')
                 )
               ),
 
-              // Content area
-              h('div', { style: { flex: 1, overflowY: 'auto', padding: '24px' }},
-
-                // DASHBOARD VIEW
-                h('div', { style: { display: activeTab === 'dashboard' ? 'block' : 'none' }},
-                  DashboardView({
-                    totalContacts,
-                    deliverableCount,
-                    undeliverableCount,
-                    totalMessagesSent,
-                    stats,
-                    batches,
-                    setActiveTab,
-                    setEditingContact,
-                    setShowContactModal
-                  })
+              // CONTACT LIST (middle)
+              h('div', { className: 'main-content glass-card', style: { flex: 1, borderRadius: '16px', overflow: 'hidden', display: 'flex', flexDirection: 'column' }},
+                // Search bar
+                h('div', { style: { padding: '16px', borderBottom: '1px solid rgba(0, 0, 0, 0.06)' }},
+                  h('input', {
+                    type: 'text',
+                    value: searchQuery,
+                    onChange: (e) => setSearchQuery(e.target.value),
+                    placeholder: 'Search contacts...',
+                    style: { ...inputStyle }
+                  }),
+                  h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }},
+                    h('div', { style: { display: 'flex', gap: '8px', alignItems: 'center' }},
+                      h('div', {
+                        className: 'checkbox' + (selectedContacts.length === filteredContacts.length && filteredContacts.length > 0 ? ' checked' : ''),
+                        onClick: selectAll
+                      },
+                        selectedContacts.length === filteredContacts.length && filteredContacts.length > 0 && h('span', { style: { color: '#fff', fontSize: '12px' }}, '\u2713')
+                      ),
+                      h('span', { style: { fontSize: '13px', color: '#888' }}, filteredContacts.length + ' contacts')
+                    ),
+                    selectedContacts.length > 0 && h('span', { style: { fontSize: '13px', color: '#007AFF', fontWeight: '600' }}, selectedContacts.length + ' selected')
+                  )
                 ),
 
-                // CONTACTS VIEW
-                h('div', { style: { display: activeTab === 'contacts' ? 'block' : 'none' }},
-                  ContactsView({
-                    contacts: filteredContacts,
-                    lists,
-                    selectedList,
-                    setSelectedList,
-                    selectedContacts,
-                    toggleContact,
-                    selectAll,
-                    selectedContact,
-                    setSelectedContact,
-                    setShowContactModal,
-                    setEditingContact,
-                    deleteContact,
-                    addTagToContact,
-                    removeTagFromContact,
-                    searchQuery,
-                    setSearchQuery,
-                    handleCSVUpload,
-                    deliveryFilter,
-                    setDeliveryFilter,
-                    csvCountryCode,
-                    setCsvCountryCode,
-                    allContacts: contacts,
-                    markContactDeliveryStatus,
-                    clearDeliveryStatus,
-                    formatPhoneForDisplay,
-                    formatNumberForCopy,
-                    setActiveTab
-                  })
-                ),
-
-                // COMPOSE VIEW (merged Quick Send + Compose)
-                h('div', { style: { display: activeTab === 'compose' ? 'block' : 'none' }},
-                  ComposeView({
-                    messageTemplate,
-                    setMessageTemplate,
-                    contacts: filteredContacts,
-                    selectedContacts,
-                    toggleContact,
-                    selectAll,
-                    sending,
-                    normalizePhoneNumber,
-                    templates,
-                    platform,
-                    setPlatform
-                  })
-                ),
-
-                // CAMPAIGNS VIEW
-                h('div', { style: { display: activeTab === 'campaigns' ? 'block' : 'none' }},
-                  CampaignsView({
-                    campaigns,
-                    setCampaigns,
-                    contacts,
-                    templates,
-                    showCampaignModal,
-                    setShowCampaignModal,
-                    editingCampaign,
-                    setEditingCampaign
-                  })
-                ),
-
-                // TEMPLATES VIEW
-                h('div', { style: { display: activeTab === 'templates' ? 'block' : 'none' }},
-                  TemplatesView({
-                    templates,
-                    setTemplates,
-                    showTemplateModal,
-                    setShowTemplateModal,
-                    editingTemplate,
-                    setEditingTemplate
-                  })
-                ),
-
-                // ACTIVITY VIEW
-                h('div', { style: { display: activeTab === 'activity' ? 'block' : 'none' }},
-                  DeliveryView({ batches, stats })
+                // List
+                h('div', { style: { flex: 1, overflowY: 'auto' }},
+                  filteredContacts.length === 0
+                    ? h('div', { style: { textAlign: 'center', padding: '40px', color: '#888' }},
+                        h('p', { style: { fontSize: '16px', marginBottom: '8px' }}, 'No contacts yet'),
+                        h('p', { style: { fontSize: '13px' }}, 'Add contacts or import a CSV to get started.')
+                      )
+                    : filteredContacts.map(contact =>
+                        h('div', {
+                          key: contact.id,
+                          className: 'contact-list-item' + (selectedContact?.id === contact.id ? ' selected' : ''),
+                          onClick: () => setSelectedContact(contact)
+                        },
+                          h('div', {
+                            className: 'checkbox' + (selectedContacts.find(c => c.id === contact.id) ? ' checked' : ''),
+                            onClick: (e) => { e.stopPropagation(); toggleContact(contact); },
+                            style: { marginRight: '12px' }
+                          },
+                            selectedContacts.find(c => c.id === contact.id) && h('span', { style: { color: '#fff', fontSize: '12px' }}, '\u2713')
+                          ),
+                          h('div', { style: { flex: 1, minWidth: 0 }},
+                            h('div', { style: { fontSize: '14px', fontWeight: '500', color: '#333' }},
+                              (contact.first_name || '') + ' ' + (contact.last_name || ''),
+                              contact.metadata?.delivery_status === 'undeliverable' && h('span', { style: { marginLeft: '8px', fontSize: '11px', padding: '2px 6px', borderRadius: '4px', background: '#FFF3CD', color: '#856404', fontWeight: '600' }}, 'Undeliverable')
+                            ),
+                            h('div', { style: { fontSize: '12px', color: '#888', marginTop: '2px' }}, formatPhoneForDisplay(contact.phone))
+                          ),
+                          (contact.metadata?.tags || []).length > 0 && h('div', { style: { display: 'flex', gap: '4px', flexWrap: 'wrap' }},
+                            (contact.metadata?.tags || []).slice(0, 2).map(tag =>
+                              h('span', { key: tag, style: { fontSize: '10px', padding: '2px 6px', borderRadius: '4px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF' }}, tag)
+                            )
+                          )
+                        )
+                      )
                 )
+              ),
+
+              // CONTACT DETAIL (right)
+              h('div', { className: 'glass-card', style: { width: '400px', flexShrink: 0, borderRadius: '16px', padding: '20px', overflowY: 'auto' }},
+                selectedContact
+                  ? ContactDetail({
+                      contact: selectedContact,
+                      onEdit: () => { setEditingContact(selectedContact); setShowContactModal(true); },
+                      onDelete: () => deleteContact(selectedContact.id),
+                      onAddTag: (tag) => addTagToContact(selectedContact.id, tag),
+                      onRemoveTag: (tag) => removeTagFromContact(selectedContact.id, tag),
+                      onClose: () => setSelectedContact(null),
+                      onMarkUndeliverable: () => markContactDeliveryStatus(selectedContact.id, 'undeliverable'),
+                      onClearDeliveryStatus: () => clearDeliveryStatus(selectedContact.id),
+                      formatPhoneForDisplay,
+                      blueBtn,
+                      secondaryBtn,
+                      inputStyle
+                    })
+                  : h('div', { style: { textAlign: 'center', padding: '40px', color: '#888' }},
+                      h('div', { style: { fontSize: '48px', marginBottom: '12px' }}, '\uD83D\uDC64'),
+                      h('p', { style: { fontSize: '15px' }}, 'Select a contact to view details')
+                    )
               )
             ),
 
-            // Contact Detail Drawer
-            selectedContact && h('div', { className: 'drawer-overlay', onClick: () => setSelectedContact(null) }),
-            selectedContact && ContactDetail({
-              contact: selectedContact,
-              onEdit: () => { setEditingContact(selectedContact); setShowContactModal(true); },
-              onDelete: () => deleteContact(selectedContact.id),
-              onAddTag: (tag) => addTagToContact(selectedContact.id, tag),
-              onRemoveTag: (tag) => removeTagFromContact(selectedContact.id, tag),
-              onClose: () => setSelectedContact(null),
-              onMarkUndeliverable: () => markContactDeliveryStatus(selectedContact.id, 'undeliverable'),
-              onClearDeliveryStatus: () => clearDeliveryStatus(selectedContact.id),
+            // ======== CAMPAIGNS TAB ========
+            activeTab === 'campaigns' && CampaignsView({
+              campaigns,
+              setCampaigns,
+              contacts,
+              templates,
+              showCampaignModal,
+              setShowCampaignModal,
+              editingCampaign,
+              setEditingCampaign,
+              blueBtn,
+              secondaryBtn,
+              inputStyle,
+              labelStyle
+            }),
+
+            // ======== TEMPLATES TAB ========
+            activeTab === 'templates' && TemplatesView({
+              templates,
+              setTemplates,
+              showTemplateModal,
+              setShowTemplateModal,
+              editingTemplate,
+              setEditingTemplate,
+              blueBtn,
+              secondaryBtn,
+              inputStyle,
+              labelStyle
+            }),
+
+            // ======== QUICK SEND TAB ========
+            activeTab === 'quicksend' && QuickSendView({
+              normalizePhoneNumber,
+              templates,
+              platform,
+              setPlatform,
+              sending,
+              blueBtn,
+              secondaryBtn,
+              inputStyle,
+              labelStyle
+            }),
+
+            // ======== COMPOSE TAB ========
+            activeTab === 'compose' && ComposeView({
+              messageTemplate,
+              setMessageTemplate,
+              contacts: filteredContacts,
+              selectedContacts,
+              toggleContact,
+              selectAll,
+              sending,
+              normalizePhoneNumber,
+              templates,
+              platform,
+              setPlatform,
+              blueBtn,
+              secondaryBtn,
+              inputStyle,
+              labelStyle,
               formatPhoneForDisplay
             }),
 
-            // Contact Modal
+            // ======== ACTIVITY TAB ========
+            activeTab === 'activity' && DeliveryView({
+              batches,
+              stats,
+              blueBtn,
+              secondaryBtn
+            }),
+
+            // ======== CONTACT MODAL ========
             ContactModal({
               contact: editingContact,
               show: showContactModal,
               onClose: () => { setShowContactModal(false); setEditingContact(null); },
-              onSave: saveContact
+              onSave: saveContact,
+              blueBtn,
+              secondaryBtn,
+              inputStyle,
+              labelStyle
             })
           );
         }
 
-        // ======== DASHBOARD VIEW ========
-        function DashboardView(props) {
-          var totalContacts = props.totalContacts;
-          var deliverableCount = props.deliverableCount;
-          var undeliverableCount = props.undeliverableCount;
-          var totalMessagesSent = props.totalMessagesSent;
-          var stats = props.stats;
-          var batches = props.batches;
-          var setActiveTab = props.setActiveTab;
-          var setEditingContact = props.setEditingContact;
-          var setShowContactModal = props.setShowContactModal;
-
-          var deliveryRate = totalContacts > 0 ? Math.round((deliverableCount / totalContacts) * 100) : 0;
-
-          return h('div', null,
-            // KPI row
-            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }},
-              h('div', { className: 'kpi-card' },
-                h('div', { className: 'kpi-value', style: { color: 'var(--text-primary)' }}, totalContacts),
-                h('div', { className: 'kpi-label' }, 'Total Contacts')
-              ),
-              h('div', { className: 'kpi-card' },
-                h('div', { className: 'kpi-value', style: { color: 'var(--accent)' }}, stats.totalBatches),
-                h('div', { className: 'kpi-label' }, 'Messages Sent')
-              ),
-              h('div', { className: 'kpi-card' },
-                h('div', { className: 'kpi-value', style: { color: 'var(--success)' }}, deliveryRate + '%'),
-                h('div', { className: 'kpi-label' }, 'Delivery Rate')
-              ),
-              h('div', { className: 'kpi-card' },
-                h('div', { className: 'kpi-value', style: { color: 'var(--warning)' }}, undeliverableCount),
-                h('div', { className: 'kpi-label' }, 'Undeliverable')
-              )
-            ),
-
-            // Quick actions
-            h('div', { className: 'card', style: { padding: '20px', marginBottom: '24px' }},
-              h('h3', { style: { fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}, 'Quick Actions'),
-              h('div', { style: { display: 'flex', gap: '8px' }},
-                h('button', { className: 'btn-primary', onClick: function() { setActiveTab('campaigns'); } }, '+ New Campaign'),
-                h('button', { className: 'btn-secondary', onClick: function() { setActiveTab('contacts'); } }, 'Import Contacts'),
-                h('button', { className: 'btn-secondary', onClick: function() { setActiveTab('compose'); } }, 'Compose Message')
-              )
-            ),
-
-            // Recent activity
-            h('div', { className: 'card', style: { padding: '20px' }},
-              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '12px' }},
-                h('h3', { style: { fontSize: '14px', fontWeight: '600' }}, 'Recent Activity'),
-                h('button', { className: 'btn-secondary', style: { padding: '4px 10px', fontSize: '12px' }, onClick: function() { setActiveTab('activity'); } }, 'View All')
-              ),
-              batches.length === 0
-                ? h('p', { style: { color: 'var(--text-muted)', fontSize: '13px', padding: '20px 0', textAlign: 'center' }}, 'No activity yet. Send your first message to get started.')
-                : h('table', { className: 'data-table' },
-                    h('thead', null,
-                      h('tr', null,
-                        h('th', null, 'Date'),
-                        h('th', null, 'Messages'),
-                        h('th', null, 'Platform'),
-                        h('th', null, 'Status')
-                      )
-                    ),
-                    h('tbody', null,
-                      batches.slice(0, 5).map(function(batch) {
-                        return h('tr', { key: batch.id },
-                          h('td', null, new Date(batch.created_at).toLocaleDateString()),
-                          h('td', null, batch.total_messages),
-                          h('td', null, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
-                          h('td', null, h('span', { className: 'badge ' + (batch.status === 'completed' ? 'badge-green' : batch.status === 'sending' ? 'badge-yellow' : batch.status === 'failed' ? 'badge-red' : 'badge-gray') }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1)))
-                        );
-                      })
-                    )
-                  )
-            )
-          );
-        }
-
-        // ======== CONTACTS VIEW ========
-        function ContactsView(props) {
-          const {
-            contacts, lists, selectedList, setSelectedList, selectedContacts,
-            toggleContact, selectAll, selectedContact, setSelectedContact,
-            setShowContactModal, setEditingContact, deleteContact,
-            addTagToContact, removeTagFromContact, searchQuery, setSearchQuery,
-            handleCSVUpload, deliveryFilter, setDeliveryFilter, csvCountryCode,
-            setCsvCountryCode, allContacts, markContactDeliveryStatus, clearDeliveryStatus,
-            formatPhoneForDisplay, formatNumberForCopy, setActiveTab
-          } = props;
-
-          return h('div', null,
-            // Bulk actions bar
-            selectedContacts.length > 0 && h('div', { style: { background: 'var(--accent)', borderRadius: 'var(--radius-md)', padding: '10px 16px', marginBottom: '16px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }},
-              h('span', { style: { color: '#fff', fontSize: '13px', fontWeight: '600' }}, selectedContacts.length + ' selected'),
-              h('div', { style: { display: 'flex', gap: '8px' }},
-                h('button', {
-                  onClick: () => setActiveTab('compose'),
-                  style: { padding: '6px 12px', background: '#fff', color: 'var(--accent)', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }
-                }, 'Send Message'),
-                h('button', {
-                  onClick: () => {
-                    const groupName = prompt('Enter group name:');
-                    if (groupName) {
-                      selectedContacts.forEach(contact => {
-                        addTagToContact(contact.id, groupName);
-                      });
-                      showToast('Added ' + selectedContacts.length + ' contacts to "' + groupName + '"', 'success');
-                    }
-                  },
-                  style: { padding: '6px 12px', background: 'rgba(255,255,255,0.2)', color: '#fff', border: '1px solid rgba(255,255,255,0.3)', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }
-                }, 'Create Group'),
-                h('button', {
-                  onClick: async () => {
-                    if (!confirm('Delete ' + selectedContacts.length + ' contact(s)?')) return;
-                    try {
-                      for (const contact of selectedContacts) {
-                        await supabaseClient.from('contacts').delete().eq('id', contact.id);
-                      }
-                      showToast('Deleted ' + selectedContacts.length + ' contact(s)', 'success');
-                      // Note: we can't call setSelectedContacts from here, but the parent will re-render
-                    } catch (err) {
-                      showToast('Error deleting contacts: ' + err.message, 'error');
-                    }
-                  },
-                  style: { padding: '6px 12px', background: 'var(--danger)', color: '#fff', border: 'none', borderRadius: 'var(--radius-sm)', fontSize: '12px', fontWeight: '600', cursor: 'pointer' }
-                }, 'Delete')
-              )
-            ),
-
-            // Filter bar
-            h('div', { className: 'card', style: { padding: '12px 16px', marginBottom: '16px', display: 'flex', gap: '10px', alignItems: 'center', flexWrap: 'wrap' }},
-              h('input', {
-                type: 'text',
-                value: searchQuery,
-                onChange: (e) => setSearchQuery(e.target.value),
-                placeholder: 'Search contacts...',
-                className: 'form-input',
-                style: { width: '220px', flex: 'none' }
-              }),
-              h('select', {
-                value: selectedList,
-                onChange: (e) => setSelectedList(e.target.value),
-                className: 'form-input',
-                style: { width: '160px', flex: 'none' }
-              },
-                lists.map(list => h('option', { key: list.id, value: list.id }, list.name + ' (' + list.count + ')'))
-              ),
-              h('select', {
-                value: deliveryFilter,
-                onChange: (e) => setDeliveryFilter(e.target.value),
-                className: 'form-input',
-                style: { width: '160px', flex: 'none' }
-              },
-                h('option', { value: 'all' }, 'All Status'),
-                h('option', { value: 'deliverable' }, 'Deliverable'),
-                h('option', { value: 'undeliverable' }, 'Undeliverable')
-              ),
-              h('div', { style: { flex: 1 }}),
-              h('select', {
-                value: csvCountryCode,
-                onChange: (e) => setCsvCountryCode(e.target.value),
-                className: 'form-input',
-                style: { width: '140px', flex: 'none' }
-              },
-                h('option', { value: '+1' }, '+1 US/Canada'),
-                h('option', { value: '+44' }, '+44 UK'),
-                h('option', { value: '+61' }, '+61 Australia'),
-                h('option', { value: '+971' }, '+971 UAE'),
-                h('option', { value: '+52' }, '+52 Mexico'),
-                h('option', { value: '+91' }, '+91 India'),
-                h('option', { value: '+86' }, '+86 China'),
-                h('option', { value: '+81' }, '+81 Japan'),
-                h('option', { value: '+33' }, '+33 France'),
-                h('option', { value: '+49' }, '+49 Germany'),
-                h('option', { value: '+34' }, '+34 Spain'),
-                h('option', { value: '+39' }, '+39 Italy'),
-                h('option', { value: '+55' }, '+55 Brazil')
-              ),
-              h('label', { className: 'btn-secondary', style: { display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'pointer' }},
-                'Import CSV',
-                h('input', { type: 'file', accept: '.csv', onChange: handleCSVUpload, style: { display: 'none' }})
-              ),
-              h('button', {
-                className: 'btn-secondary',
-                onClick: () => {
-                  const numbers = (allContacts || contacts).map(c => formatNumberForCopy(c.phone)).join('\n');
-                  navigator.clipboard.writeText(numbers).then(() => {
-                    showToast('Copied ' + (allContacts || contacts).length + ' phone numbers', 'success');
-                  }).catch(err => {
-                    showToast('Error copying: ' + err.message, 'error');
-                  });
-                }
-              }, 'Export All'),
-              selectedContacts.length > 0 && h('button', {
-                className: 'btn-secondary',
-                onClick: () => {
-                  const numbers = selectedContacts.map(c => formatNumberForCopy(c.phone)).join('\n');
-                  navigator.clipboard.writeText(numbers).then(() => {
-                    showToast('Copied ' + selectedContacts.length + ' selected numbers', 'success');
-                  }).catch(err => {
-                    showToast('Error copying: ' + err.message, 'error');
-                  });
-                }
-              }, 'Copy Selected')
-            ),
-
-            // Stats summary
-            h('div', { style: { display: 'flex', gap: '16px', marginBottom: '16px', fontSize: '12px', color: 'var(--text-secondary)' }},
-              h('span', null, 'Total: ' + h('strong', null, (allContacts || contacts).length)),
-              h('span', { style: { color: 'var(--success)' }}, 'Deliverable: ' + (allContacts || contacts).filter(c => c.metadata?.delivery_status !== 'undeliverable').length),
-              h('span', { style: { color: 'var(--warning)' }}, 'Undeliverable: ' + (allContacts || contacts).filter(c => c.metadata?.delivery_status === 'undeliverable').length),
-              h('span', null, 'Showing: ' + contacts.length)
-            ),
-
-            // Data table
-            h('div', { className: 'card', style: { overflow: 'hidden' }},
-              contacts.length === 0
-                ? h('div', { style: { textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }},
-                    h('p', { style: { fontSize: '14px', marginBottom: '4px' }}, 'No contacts yet'),
-                    h('p', { style: { fontSize: '12px' }}, 'Create one or import a CSV to get started.')
-                  )
-                : h('table', { className: 'data-table' },
-                    h('thead', null,
-                      h('tr', null,
-                        h('th', { style: { width: '36px' }},
-                          h('input', {
-                            type: 'checkbox',
-                            checked: selectedContacts.length === contacts.length && contacts.length > 0,
-                            onChange: selectAll,
-                            style: { cursor: 'pointer' }
-                          })
-                        ),
-                        h('th', null, 'Name'),
-                        h('th', null, 'Phone'),
-                        h('th', null, 'Tags'),
-                        h('th', null, 'Status'),
-                        h('th', { style: { width: '80px' }}, 'Actions')
-                      )
-                    ),
-                    h('tbody', null,
-                      contacts.map(contact =>
-                        h('tr', {
-                          key: contact.id,
-                          style: { cursor: 'pointer' },
-                          onClick: () => setSelectedContact(contact)
-                        },
-                          h('td', { onClick: (e) => e.stopPropagation() },
-                            h('input', {
-                              type: 'checkbox',
-                              checked: !!selectedContacts.find(c => c.id === contact.id),
-                              onChange: () => toggleContact(contact),
-                              style: { cursor: 'pointer' }
-                            })
-                          ),
-                          h('td', { style: { fontWeight: '500' }}, (contact.first_name || '') + ' ' + (contact.last_name || '')),
-                          h('td', { style: { fontFamily: 'monospace', fontSize: '12px' }}, formatPhoneForDisplay(contact.phone)),
-                          h('td', null,
-                            (contact.metadata?.tags || []).map(tag =>
-                              h('span', { key: tag, className: 'badge badge-blue', style: { marginRight: '4px' }}, tag)
-                            )
-                          ),
-                          h('td', null,
-                            contact.metadata?.delivery_status === 'undeliverable'
-                              ? h('span', { className: 'badge badge-yellow' }, 'Undeliverable')
-                              : h('span', { className: 'badge badge-green' }, 'OK')
-                          ),
-                          h('td', { onClick: (e) => e.stopPropagation() },
-                            h('button', {
-                              onClick: () => { setEditingContact(contact); setShowContactModal(true); },
-                              style: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--accent)', fontSize: '12px', fontWeight: '600', marginRight: '8px' }
-                            }, 'Edit'),
-                            h('button', {
-                              onClick: () => deleteContact(contact.id),
-                              style: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--danger)', fontSize: '12px', fontWeight: '600' }
-                            }, 'Del')
-                          )
-                        )
-                      )
-                    )
-                  )
-            )
-          );
-        }
-
-        // ======== CONTACT DETAIL (Slide-out Drawer) ========
+        // ======== CONTACT DETAIL ========
         function ContactDetail(props) {
-          const { contact, onEdit, onDelete, onAddTag, onRemoveTag, onClose, onMarkUndeliverable, onClearDeliveryStatus, formatPhoneForDisplay } = props;
+          const { contact, onEdit, onDelete, onAddTag, onRemoveTag, onClose, onMarkUndeliverable, onClearDeliveryStatus, formatPhoneForDisplay, blueBtn, secondaryBtn, inputStyle } = props;
           const [newTag, setNewTag] = React.useState('');
           const [messageHistory, setMessageHistory] = React.useState([]);
           const [loading, setLoading] = React.useState(true);
@@ -1558,68 +1245,62 @@
             }
           };
 
-          if (!contact) {
-            return h('div', { style: { display: 'none' }});
-          }
+          if (!contact) return null;
 
-          return h('div', {
-            onClick: (e) => e.stopPropagation(),
-            style: {
-              position: 'fixed',
-              top: 0,
-              right: 0,
-              width: '480px',
-              height: '100vh',
-              background: 'var(--card-bg)',
-              borderLeft: '1px solid var(--border-color)',
-              zIndex: 950,
-              overflowY: 'auto',
-              padding: '24px',
-              boxShadow: '-4px 0 24px rgba(0,0,0,0.08)'
-            }
-          },
+          return h('div', null,
             // Header
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }},
-              h('h2', { style: { fontSize: '16px', fontWeight: '700' }}, 'Contact Details'),
-              h('button', { onClick: onClose, style: { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)', lineHeight: 1 }}, '\u00D7')
-            ),
-
-            // Contact info
-            h('div', { style: { marginBottom: '24px', textAlign: 'center' }},
-              h('div', { style: { width: '64px', height: '64px', borderRadius: '50%', background: 'var(--accent)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '600', margin: '0 auto 12px' }},
+            h('div', { style: { textAlign: 'center', marginBottom: '20px' }},
+              h('div', { style: { width: '64px', height: '64px', borderRadius: '50%', background: 'linear-gradient(135deg, #007AFF 0%, #0051D5 100%)', color: 'white', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: '24px', fontWeight: '600', margin: '0 auto 12px', boxShadow: '0 4px 15px rgba(0, 122, 255, 0.3)' }},
                 (contact.first_name?.[0] || '?').toUpperCase()
               ),
-              h('h3', { style: { fontSize: '18px', fontWeight: '600', marginBottom: '2px' }}, (contact.first_name || '') + ' ' + (contact.last_name || '')),
-              h('p', { style: { color: 'var(--text-secondary)', fontSize: '13px', fontFamily: 'monospace' }}, formatPhoneForDisplay ? formatPhoneForDisplay(contact.phone) : contact.phone),
-              contact.metadata?.delivery_status === 'undeliverable' && h('span', {
-                className: 'badge badge-yellow',
-                style: { marginTop: '8px', display: 'inline-block' }
-              }, 'Undeliverable')
+              h('h3', { style: { fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '4px' }}, (contact.first_name || '') + ' ' + (contact.last_name || '')),
+              h('p', { style: { fontSize: '14px', color: '#888' }}, formatPhoneForDisplay ? formatPhoneForDisplay(contact.phone) : contact.phone),
+              contact.metadata?.delivery_status === 'undeliverable' && h('span', { style: { display: 'inline-block', marginTop: '8px', fontSize: '12px', padding: '4px 10px', borderRadius: '6px', background: '#FFF3CD', color: '#856404', fontWeight: '600' }}, 'Undeliverable')
+            ),
+
+            // Delivery toggle
+            h('div', { style: { marginBottom: '16px' }},
+              h('button', {
+                onClick: () => {
+                  if (contact.metadata?.delivery_status === 'undeliverable') {
+                    onClearDeliveryStatus();
+                  } else {
+                    onMarkUndeliverable();
+                  }
+                },
+                style: {
+                  ...secondaryBtn,
+                  width: '100%',
+                  fontSize: '13px',
+                  padding: '8px 14px',
+                  background: contact.metadata?.delivery_status === 'undeliverable' ? 'rgba(40, 167, 69, 0.1)' : 'rgba(255, 193, 7, 0.1)',
+                  color: contact.metadata?.delivery_status === 'undeliverable' ? '#28a745' : '#856404',
+                  border: 'none'
+                }
+              }, contact.metadata?.delivery_status === 'undeliverable' ? 'Mark as Deliverable' : 'Mark as Undeliverable')
             ),
 
             // Tags
-            h('div', { style: { marginBottom: '24px' }},
-              h('h4', { style: { fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}, 'Tags'),
-              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px' }},
+            h('div', { style: { marginBottom: '20px' }},
+              h('h4', { style: { fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '8px' }}, 'Tags'),
+              h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '10px' }},
                 (contact.metadata?.tags || []).length === 0
-                  ? h('span', { style: { color: 'var(--text-muted)', fontSize: '12px' }}, 'No tags')
+                  ? h('span', { style: { fontSize: '13px', color: '#aaa' }}, 'No tags')
                   : (contact.metadata?.tags || []).map(tag => h('span', {
                       key: tag,
-                      className: 'badge badge-blue',
-                      style: { display: 'inline-flex', alignItems: 'center', gap: '4px', cursor: 'default' }
+                      style: { display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '4px 10px', borderRadius: '6px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF' }
                     },
                       tag,
-                      h('span', { onClick: () => onRemoveTag(tag), style: { cursor: 'pointer', fontWeight: 'bold', marginLeft: '2px' }}, '\u00D7')
+                      h('span', { onClick: () => onRemoveTag(tag), style: { cursor: 'pointer', fontWeight: 'bold', marginLeft: '4px' }}, '\u00D7')
                     ))
               ),
-              h('div', { style: { display: 'flex', gap: '6px' }},
+              h('div', { style: { display: 'flex', gap: '8px' }},
                 h('input', {
                   type: 'text',
                   value: newTag,
                   onChange: (e) => setNewTag(e.target.value),
                   placeholder: 'New tag',
-                  className: 'form-input',
-                  style: { flex: 1, padding: '6px 10px', fontSize: '12px' },
+                  style: { ...inputStyle, flex: 1, fontSize: '13px', padding: '8px 10px' },
                   onKeyPress: (e) => {
                     if (e.key === 'Enter' && newTag) {
                       onAddTag(newTag);
@@ -1628,32 +1309,31 @@
                   }
                 }),
                 h('button', {
-                  className: 'btn-primary',
-                  style: { padding: '6px 12px', fontSize: '12px' },
-                  onClick: () => { if (newTag) { onAddTag(newTag); setNewTag(''); } }
+                  onClick: () => { if (newTag) { onAddTag(newTag); setNewTag(''); } },
+                  style: { ...blueBtn, padding: '8px 14px', fontSize: '13px' }
                 }, 'Add')
               )
             ),
 
-            // Message history
-            h('div', { style: { marginBottom: '24px' }},
-              h('h4', { style: { fontSize: '12px', fontWeight: '600', color: 'var(--text-secondary)', textTransform: 'uppercase', letterSpacing: '0.05em', marginBottom: '8px' }}, 'Message History'),
+            // Message History
+            h('div', { style: { marginBottom: '20px' }},
+              h('h4', { style: { fontSize: '13px', fontWeight: '600', color: '#888', marginBottom: '8px' }}, 'Message History'),
               h('div', { style: { maxHeight: '200px', overflowY: 'auto' }},
-                loading ? h('p', { style: { color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', padding: '16px' }}, 'Loading...') :
-                messageHistory.length === 0 ? h('p', { style: { color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', padding: '16px' }}, 'No messages sent yet') :
+                loading ? h('p', { style: { color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '16px' }}, 'Loading...') :
+                messageHistory.length === 0 ? h('p', { style: { color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '16px' }}, 'No messages sent yet') :
                 messageHistory.map(msg => h('div', {
                   key: msg.id,
                   style: {
-                    padding: '10px',
-                    background: '#f9fafb',
-                    borderRadius: 'var(--radius-md)',
+                    padding: '10px 12px',
+                    background: 'rgba(0, 0, 0, 0.03)',
+                    borderRadius: '10px',
                     marginBottom: '6px'
                   }
                 },
-                  h('div', { style: { fontSize: '12px', color: 'var(--text-primary)', marginBottom: '4px' }}, msg.message),
-                  h('div', { style: { fontSize: '11px', color: 'var(--text-muted)', display: 'flex', justifyContent: 'space-between' }},
+                  h('div', { style: { fontSize: '13px', color: '#333', marginBottom: '4px' }}, msg.message),
+                  h('div', { style: { fontSize: '11px', color: '#888', display: 'flex', justifyContent: 'space-between' }},
                     h('span', null, new Date(msg.created_at).toLocaleDateString()),
-                    h('span', { className: 'badge ' + (msg.status === 'sent' ? 'badge-green' : msg.status === 'queued' ? 'badge-yellow' : 'badge-red') }, msg.status.toUpperCase())
+                    h('span', { style: { padding: '2px 6px', borderRadius: '4px', background: msg.status === 'sent' ? 'rgba(40, 167, 69, 0.1)' : msg.status === 'queued' ? 'rgba(255, 193, 7, 0.1)' : 'rgba(220, 53, 69, 0.1)', color: msg.status === 'sent' ? '#28a745' : msg.status === 'queued' ? '#856404' : '#dc3545', fontSize: '10px', fontWeight: '600' }}, msg.status.toUpperCase())
                   )
                 ))
               )
@@ -1661,26 +1341,15 @@
 
             // Action buttons
             h('div', { style: { display: 'flex', gap: '8px' }},
-              h('button', { className: 'btn-primary', style: { flex: 1 }, onClick: onEdit }, 'Edit'),
-              h('button', {
-                className: contact.metadata?.delivery_status === 'undeliverable' ? 'btn-success' : 'btn-secondary',
-                style: { flex: 1, fontSize: '12px' },
-                onClick: () => {
-                  if (contact.metadata?.delivery_status === 'undeliverable') {
-                    onClearDeliveryStatus();
-                  } else {
-                    onMarkUndeliverable();
-                  }
-                }
-              }, contact.metadata?.delivery_status === 'undeliverable' ? 'Mark OK' : 'Undeliverable'),
-              h('button', { className: 'btn-danger', style: { flex: 1 }, onClick: onDelete }, 'Delete')
+              h('button', { onClick: onEdit, style: { ...blueBtn, flex: 1, fontSize: '13px', padding: '10px' }}, 'Edit'),
+              h('button', { onClick: onDelete, style: { ...secondaryBtn, flex: 1, fontSize: '13px', padding: '10px', color: '#ff3b30' }}, 'Delete')
             )
           );
         }
 
         // ======== CONTACT MODAL ========
         function ContactModal(props) {
-          const { contact, show, onClose, onSave } = props;
+          const { contact, show, onClose, onSave, blueBtn, secondaryBtn, inputStyle, labelStyle } = props;
           const [formData, setFormData] = React.useState({
             first_name: contact?.first_name || '',
             last_name: contact?.last_name || '',
@@ -1726,95 +1395,86 @@
             setTags(tags.filter(tag => tag !== tagToRemove));
           };
 
-          if (!show) {
-            return h('div', { style: { display: 'none' }});
-          }
+          if (!show) return null;
 
           return h('div', { className: 'modal-overlay', onClick: onClose },
-            h('div', { className: 'modal-content', onClick: (e) => e.stopPropagation(), style: { padding: '24px' }},
-              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }},
-                h('h2', { style: { fontSize: '16px', fontWeight: '700' }}, contact ? 'Edit Contact' : 'New Contact'),
-                h('button', { onClick: onClose, style: { background: 'none', border: 'none', fontSize: '20px', cursor: 'pointer', color: 'var(--text-secondary)' }}, '\u00D7')
+            h('div', { className: 'modal-content', onClick: (e) => e.stopPropagation(), style: { padding: '28px' }},
+              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '24px' }},
+                h('h2', { style: { fontSize: '20px', fontWeight: '600', color: '#333' }}, contact ? 'Edit Contact' : 'New Contact'),
+                h('button', { onClick: onClose, style: { background: 'none', border: 'none', fontSize: '22px', cursor: 'pointer', color: '#999' }}, '\u00D7')
               ),
               h('form', { onSubmit: handleSubmit },
-                h('div', { className: 'form-group' },
-                  h('label', { className: 'form-label' }, 'First Name'),
+                h('div', { style: { marginBottom: '16px' }},
+                  h('label', { style: labelStyle }, 'First Name'),
                   h('input', {
                     type: 'text',
                     value: formData.first_name,
                     onChange: (e) => setFormData({ ...formData, first_name: e.target.value }),
-                    className: 'form-input',
+                    style: inputStyle,
                     required: true
                   })
                 ),
-                h('div', { className: 'form-group' },
-                  h('label', { className: 'form-label' }, 'Last Name'),
+                h('div', { style: { marginBottom: '16px' }},
+                  h('label', { style: labelStyle }, 'Last Name'),
                   h('input', {
                     type: 'text',
                     value: formData.last_name,
                     onChange: (e) => setFormData({ ...formData, last_name: e.target.value }),
-                    className: 'form-input',
+                    style: inputStyle,
                     required: true
                   })
                 ),
-                h('div', { className: 'form-group' },
-                  h('label', { className: 'form-label' }, 'Phone Number'),
+                h('div', { style: { marginBottom: '16px' }},
+                  h('label', { style: labelStyle }, 'Phone Number'),
                   h('input', {
                     type: 'tel',
                     value: formData.phone,
                     onChange: (e) => setFormData({ ...formData, phone: e.target.value }),
                     placeholder: '+1234567890',
-                    className: 'form-input',
+                    style: inputStyle,
                     required: true
                   })
                 ),
-                h('div', { className: 'form-group' },
-                  h('label', { className: 'form-label' }, 'Tags'),
-                  h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '4px', marginBottom: '8px', minHeight: '32px', padding: '6px', background: '#f9fafb', borderRadius: 'var(--radius-md)' }},
-                    tags.length === 0 ? h('span', { style: { color: 'var(--text-muted)', fontSize: '12px' }}, 'No tags yet') :
+                h('div', { style: { marginBottom: '16px' }},
+                  h('label', { style: labelStyle }, 'Tags'),
+                  h('div', { style: { display: 'flex', flexWrap: 'wrap', gap: '6px', marginBottom: '8px', minHeight: '32px', padding: '8px', background: 'rgba(0, 0, 0, 0.02)', borderRadius: '10px' }},
+                    tags.length === 0 ? h('span', { style: { color: '#aaa', fontSize: '13px' }}, 'No tags yet') :
                     tags.map(tag => h('span', {
                       key: tag,
-                      className: 'badge badge-blue',
-                      style: { display: 'inline-flex', alignItems: 'center', gap: '4px' }
+                      style: { display: 'inline-flex', alignItems: 'center', gap: '4px', fontSize: '12px', padding: '4px 10px', borderRadius: '6px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF' }
                     },
                       tag,
-                      h('span', {
-                        onClick: () => removeTag(tag),
-                        style: { cursor: 'pointer', fontWeight: 'bold' }
-                      }, '\u00D7')
+                      h('span', { onClick: () => removeTag(tag), style: { cursor: 'pointer', fontWeight: 'bold' }}, '\u00D7')
                     ))
                   ),
-                  h('div', { style: { display: 'flex', gap: '6px' }},
+                  h('div', { style: { display: 'flex', gap: '8px' }},
                     h('input', {
                       type: 'text',
                       value: tagInput,
                       onChange: (e) => setTagInput(e.target.value),
                       placeholder: 'Add a tag',
-                      className: 'form-input',
-                      style: { flex: 1 },
+                      style: { ...inputStyle, flex: 1 },
                       onKeyPress: (e) => {
                         if (e.key === 'Enter') { e.preventDefault(); addTag(); }
                       }
                     }),
                     h('button', {
                       type: 'button',
-                      className: 'btn-primary',
-                      onClick: addTag
+                      onClick: addTag,
+                      style: { ...blueBtn, padding: '10px 16px' }
                     }, '+ Add')
                   ),
-                  h('p', { style: { marginTop: '4px', fontSize: '11px', color: 'var(--text-muted)' }}, 'Tags help organize contacts into lists')
+                  h('p', { style: { marginTop: '6px', fontSize: '12px', color: '#aaa' }}, 'Tags help organize contacts into lists')
                 ),
-                h('div', { style: { display: 'flex', gap: '8px', marginTop: '20px' }},
+                h('div', { style: { display: 'flex', gap: '10px', marginTop: '24px' }},
                   h('button', {
                     type: 'button',
-                    className: 'btn-secondary',
-                    style: { flex: 1 },
-                    onClick: onClose
+                    onClick: onClose,
+                    style: { ...secondaryBtn, flex: 1 }
                   }, 'Cancel'),
                   h('button', {
                     type: 'submit',
-                    className: 'btn-primary',
-                    style: { flex: 1 }
+                    style: { ...blueBtn, flex: 1 }
                   }, 'Save Contact')
                 )
               )
@@ -1822,17 +1482,14 @@
           );
         }
 
-        // ======== COMPOSE VIEW (merged Quick Send + Compose) ========
-        function ComposeView(props) {
-          const { messageTemplate, setMessageTemplate, contacts, selectedContacts, toggleContact, selectAll, sending, normalizePhoneNumber, templates, platform, setPlatform } = props;
-          const [mode, setMode] = React.useState('contacts'); // 'contacts' or 'manual'
+        // ======== QUICK SEND VIEW ========
+        function QuickSendView(props) {
+          const { normalizePhoneNumber, templates, platform, setPlatform, sending, blueBtn, secondaryBtn, inputStyle, labelStyle } = props;
           const [phoneList, setPhoneList] = React.useState('');
           const [manualMessage, setManualMessage] = React.useState('');
           const [parsedNumbers, setParsedNumbers] = React.useState([]);
           const [selectedTemplate, setSelectedTemplate] = React.useState('');
-          const [composeSearch, setComposeSearch] = React.useState('');
 
-          // Parse phone numbers for manual mode
           React.useEffect(() => {
             if (!phoneList.trim()) { setParsedNumbers([]); return; }
             const numbers = phoneList
@@ -1843,24 +1500,17 @@
             setParsedNumbers([...new Set(numbers)]);
           }, [phoneList]);
 
-          // Apply template
           const handleTemplateSelect = (templateId) => {
             setSelectedTemplate(templateId);
             if (templateId) {
               const tmpl = templates.find(t => t.id === templateId);
-              if (tmpl) {
-                if (mode === 'contacts') {
-                  setMessageTemplate(tmpl.message);
-                } else {
-                  setManualMessage(tmpl.message);
-                }
-              }
+              if (tmpl) setManualMessage(tmpl.message);
             }
           };
 
           const handleManualSend = async () => {
             if (!manualMessage || parsedNumbers.length === 0) {
-              showToast('Please enter a message and at least one phone number', 'warning');
+              alert('Please enter a message and at least one phone number');
               return;
             }
             const tempContacts = parsedNumbers.map((phone, index) => ({
@@ -1873,10 +1523,91 @@
             await window.handleSendBlast(manualMessage, tempContacts);
           };
 
-          const currentMessage = mode === 'contacts' ? messageTemplate : manualMessage;
-          const charCount = currentMessage.length;
+          return h('div', { className: 'glass-card', style: { padding: '28px', animation: 'fadeIn 0.3s ease-out' }},
+            h('h2', { style: { fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '4px' }}, 'Quick Send'),
+            h('p', { style: { fontSize: '14px', color: '#888', marginBottom: '24px' }}, 'Paste phone numbers directly to send a blast'),
 
-          // Filter contacts for compose search
+            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }},
+              // Left: Numbers
+              h('div', null,
+                h('label', { style: labelStyle }, 'Phone Numbers'),
+                h('textarea', {
+                  value: phoneList,
+                  onChange: (e) => setPhoneList(e.target.value),
+                  placeholder: 'Paste phone numbers here...\n\n5551234567\n+1-555-234-5678\n(555) 345-6789',
+                  rows: 12,
+                  style: { ...inputStyle, resize: 'vertical', fontFamily: 'monospace', fontSize: '13px', lineHeight: '1.6' }
+                }),
+                h('p', { style: { marginTop: '8px', fontSize: '13px', color: '#888' }},
+                  parsedNumbers.length > 0
+                    ? parsedNumbers.length + ' number' + (parsedNumbers.length === 1 ? '' : 's') + ' detected'
+                    : 'Separate with commas, spaces, or new lines'
+                ),
+                parsedNumbers.length > 0 && h('div', { style: { marginTop: '10px', padding: '10px', background: 'rgba(0, 0, 0, 0.03)', borderRadius: '10px', maxHeight: '120px', overflowY: 'auto' }},
+                  h('div', { style: { fontSize: '12px', color: '#888', marginBottom: '6px', fontWeight: '600' }}, 'Formatted:'),
+                  parsedNumbers.map((num, i) => h('div', { key: i, style: { fontSize: '12px', fontFamily: 'monospace', color: '#333' }}, num))
+                )
+              ),
+
+              // Right: Message
+              h('div', null,
+                templates.length > 0 && h('div', { style: { marginBottom: '12px' }},
+                  h('label', { style: labelStyle }, 'Template'),
+                  h('select', {
+                    value: selectedTemplate,
+                    onChange: (e) => handleTemplateSelect(e.target.value),
+                    style: inputStyle
+                  },
+                    h('option', { value: '' }, 'Choose a template...'),
+                    templates.map(t => h('option', { key: t.id, value: t.id }, t.name))
+                  )
+                ),
+
+                h('label', { style: labelStyle }, 'Message'),
+                h('textarea', {
+                  value: manualMessage,
+                  onChange: (e) => setManualMessage(e.target.value),
+                  placeholder: 'Type your message here...',
+                  rows: 12,
+                  style: { ...inputStyle, resize: 'vertical', lineHeight: '1.5' }
+                }),
+
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }},
+                  h('span', { style: { fontSize: '12px', color: '#888' }}, manualMessage.length + ' chars'),
+                  h('select', {
+                    value: platform,
+                    onChange: (e) => setPlatform(e.target.value),
+                    style: { ...inputStyle, width: '120px', padding: '6px 10px', fontSize: '13px' }
+                  },
+                    h('option', { value: 'imessage' }, 'iMessage'),
+                    h('option', { value: 'sms' }, 'SMS')
+                  )
+                ),
+
+                h('button', {
+                  onClick: handleManualSend,
+                  disabled: sending || !manualMessage || parsedNumbers.length === 0,
+                  style: { ...blueBtn, width: '100%', marginTop: '16px', padding: '14px', fontSize: '15px', opacity: (sending || !manualMessage || parsedNumbers.length === 0) ? 0.5 : 1 }
+                }, sending ? 'Sending...' : 'Send to ' + parsedNumbers.length + ' number' + (parsedNumbers.length === 1 ? '' : 's'))
+              )
+            )
+          );
+        }
+
+        // ======== COMPOSE VIEW ========
+        function ComposeView(props) {
+          const { messageTemplate, setMessageTemplate, contacts, selectedContacts, toggleContact, selectAll, sending, normalizePhoneNumber, templates, platform, setPlatform, blueBtn, secondaryBtn, inputStyle, labelStyle, formatPhoneForDisplay } = props;
+          const [selectedTemplate, setSelectedTemplate] = React.useState('');
+          const [composeSearch, setComposeSearch] = React.useState('');
+
+          const handleTemplateSelect = (templateId) => {
+            setSelectedTemplate(templateId);
+            if (templateId) {
+              const tmpl = templates.find(t => t.id === templateId);
+              if (tmpl) setMessageTemplate(tmpl.message);
+            }
+          };
+
           const filteredComposeContacts = composeSearch
             ? contacts.filter(c =>
                 c.first_name?.toLowerCase().includes(composeSearch.toLowerCase()) ||
@@ -1885,169 +1616,95 @@
               )
             : contacts;
 
-          return h('div', { style: { maxWidth: '900px' }},
-            // Mode toggle
-            h('div', { style: { display: 'flex', gap: '0', marginBottom: '20px', borderRadius: 'var(--radius-md)', overflow: 'hidden', border: '1px solid var(--border-color)', width: 'fit-content' }},
-              h('button', {
-                onClick: () => setMode('contacts'),
-                style: {
-                  padding: '8px 20px',
-                  background: mode === 'contacts' ? 'var(--accent)' : 'var(--card-bg)',
-                  color: mode === 'contacts' ? '#fff' : 'var(--text-primary)',
-                  border: 'none',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit'
-                }
-              }, 'From Contacts'),
-              h('button', {
-                onClick: () => setMode('manual'),
-                style: {
-                  padding: '8px 20px',
-                  background: mode === 'manual' ? 'var(--accent)' : 'var(--card-bg)',
-                  color: mode === 'manual' ? '#fff' : 'var(--text-primary)',
-                  border: 'none',
-                  borderLeft: '1px solid var(--border-color)',
-                  fontSize: '13px',
-                  fontWeight: '600',
-                  cursor: 'pointer',
-                  fontFamily: 'inherit'
-                }
-              }, 'Manual Entry')
-            ),
+          return h('div', { className: 'glass-card', style: { padding: '28px', animation: 'fadeIn 0.3s ease-out' }},
+            h('h2', { style: { fontSize: '20px', fontWeight: '600', color: '#333', marginBottom: '4px' }}, 'Compose Message'),
+            h('p', { style: { fontSize: '14px', color: '#888', marginBottom: '24px' }}, 'Select contacts from your CRM and compose a personalized message'),
 
-            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px' }},
-              // Left: Recipients
-              h('div', { className: 'card', style: { padding: '16px' }},
-                h('h3', { style: { fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}, 'Recipients'),
-
-                mode === 'contacts'
-                  ? h('div', null,
-                      h('input', {
-                        type: 'text',
-                        value: composeSearch,
-                        onChange: (e) => setComposeSearch(e.target.value),
-                        placeholder: 'Search contacts...',
-                        className: 'form-input',
-                        style: { marginBottom: '8px' }
-                      }),
-                      h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }},
-                        h('button', {
-                          className: 'btn-secondary',
-                          style: { padding: '4px 10px', fontSize: '11px' },
-                          onClick: selectAll
-                        }, selectedContacts.length === contacts.length ? 'Deselect All' : 'Select All (' + contacts.length + ')'),
-                        h('span', { style: { fontSize: '12px', color: 'var(--text-secondary)' }}, selectedContacts.length + ' selected')
-                      ),
-                      contacts.length === 0
-                        ? h('p', { style: { color: 'var(--text-muted)', fontSize: '12px', textAlign: 'center', padding: '24px 0' }}, 'No contacts. Import contacts first.')
-                        : h('div', { style: { maxHeight: '340px', overflowY: 'auto' }},
-                            filteredComposeContacts.map(contact =>
-                              h('div', {
-                                key: contact.id,
-                                onClick: () => toggleContact(contact),
-                                style: {
-                                  padding: '8px 10px',
-                                  display: 'flex',
-                                  alignItems: 'center',
-                                  gap: '8px',
-                                  cursor: 'pointer',
-                                  borderRadius: 'var(--radius-sm)',
-                                  background: selectedContacts.find(c => c.id === contact.id) ? 'var(--accent-light)' : 'transparent',
-                                  marginBottom: '2px',
-                                  transition: 'background 0.1s'
-                                }
-                              },
-                                h('input', {
-                                  type: 'checkbox',
-                                  checked: !!selectedContacts.find(c => c.id === contact.id),
-                                  readOnly: true,
-                                  style: { cursor: 'pointer', flexShrink: 0 }
-                                }),
-                                h('div', { style: { flex: 1, minWidth: 0 }},
-                                  h('div', { style: { fontSize: '13px', fontWeight: '500', whiteSpace: 'nowrap', overflow: 'hidden', textOverflow: 'ellipsis' }}, (contact.first_name || '') + ' ' + (contact.last_name || '')),
-                                  h('div', { style: { fontSize: '11px', color: 'var(--text-muted)' }}, contact.phone)
-                                )
-                              )
-                            )
+            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '24px' }},
+              // Left: Contact picker
+              h('div', null,
+                h('label', { style: labelStyle }, 'Recipients'),
+                h('input', {
+                  type: 'text',
+                  value: composeSearch,
+                  onChange: (e) => setComposeSearch(e.target.value),
+                  placeholder: 'Search contacts...',
+                  style: { ...inputStyle, marginBottom: '10px' }
+                }),
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }},
+                  h('button', {
+                    onClick: selectAll,
+                    style: { ...secondaryBtn, padding: '6px 12px', fontSize: '12px' }
+                  }, selectedContacts.length === contacts.length ? 'Deselect All' : 'Select All (' + contacts.length + ')'),
+                  h('span', { style: { fontSize: '13px', color: '#007AFF', fontWeight: '600' }}, selectedContacts.length + ' selected')
+                ),
+                contacts.length === 0
+                  ? h('p', { style: { color: '#aaa', fontSize: '13px', textAlign: 'center', padding: '24px 0' }}, 'No contacts. Import contacts first.')
+                  : h('div', { style: { maxHeight: '380px', overflowY: 'auto', border: '1px solid rgba(0,0,0,0.06)', borderRadius: '10px' }},
+                      filteredComposeContacts.map(contact =>
+                        h('div', {
+                          key: contact.id,
+                          className: 'contact-list-item',
+                          onClick: () => toggleContact(contact),
+                          style: {
+                            background: selectedContacts.find(c => c.id === contact.id) ? 'rgba(0, 122, 255, 0.06)' : 'transparent'
+                          }
+                        },
+                          h('div', {
+                            className: 'checkbox' + (selectedContacts.find(c => c.id === contact.id) ? ' checked' : ''),
+                            style: { marginRight: '10px' }
+                          },
+                            selectedContacts.find(c => c.id === contact.id) && h('span', { style: { color: '#fff', fontSize: '12px' }}, '\u2713')
+                          ),
+                          h('div', { style: { flex: 1 }},
+                            h('div', { style: { fontSize: '13px', fontWeight: '500', color: '#333' }}, (contact.first_name || '') + ' ' + (contact.last_name || '')),
+                            h('div', { style: { fontSize: '11px', color: '#888' }}, formatPhoneForDisplay ? formatPhoneForDisplay(contact.phone) : contact.phone)
                           )
-                    )
-                  : h('div', null,
-                      h('textarea', {
-                        value: phoneList,
-                        onChange: (e) => setPhoneList(e.target.value),
-                        placeholder: 'Paste phone numbers here...\n\n5551234567\n+1-555-234-5678\n(555) 345-6789',
-                        rows: 10,
-                        className: 'form-input',
-                        style: { resize: 'vertical', fontFamily: 'monospace', fontSize: '12px', lineHeight: '1.6' }
-                      }),
-                      h('p', { style: { marginTop: '6px', fontSize: '11px', color: 'var(--text-secondary)' }},
-                        parsedNumbers.length > 0
-                          ? parsedNumbers.length + ' number' + (parsedNumbers.length === 1 ? '' : 's') + ' detected'
-                          : 'Separate with commas, spaces, or new lines'
-                      ),
-                      parsedNumbers.length > 0 && h('div', { style: { marginTop: '8px', padding: '8px', background: '#f9fafb', borderRadius: 'var(--radius-sm)', maxHeight: '120px', overflowY: 'auto' }},
-                        h('div', { style: { fontSize: '11px', color: 'var(--text-secondary)', marginBottom: '4px', fontWeight: '600' }}, 'Formatted:'),
-                        parsedNumbers.map((num, i) => h('div', { key: i, style: { fontSize: '11px', fontFamily: 'monospace' }}, num))
+                        )
                       )
                     )
               ),
 
               // Right: Message
-              h('div', { className: 'card', style: { padding: '16px', display: 'flex', flexDirection: 'column' }},
-                h('h3', { style: { fontSize: '13px', fontWeight: '600', marginBottom: '12px' }}, 'Message'),
-
-                // Template dropdown
-                templates.length > 0 && h('div', { style: { marginBottom: '8px' }},
+              h('div', null,
+                templates.length > 0 && h('div', { style: { marginBottom: '12px' }},
+                  h('label', { style: labelStyle }, 'Template'),
                   h('select', {
                     value: selectedTemplate,
                     onChange: (e) => handleTemplateSelect(e.target.value),
-                    className: 'form-input',
-                    style: { fontSize: '12px' }
+                    style: inputStyle
                   },
                     h('option', { value: '' }, 'Choose a template...'),
                     templates.map(t => h('option', { key: t.id, value: t.id }, t.name))
                   )
                 ),
 
+                h('label', { style: labelStyle }, 'Message'),
                 h('textarea', {
-                  value: mode === 'contacts' ? messageTemplate : manualMessage,
-                  onChange: (e) => mode === 'contacts' ? setMessageTemplate(e.target.value) : setManualMessage(e.target.value),
+                  value: messageTemplate,
+                  onChange: (e) => setMessageTemplate(e.target.value),
                   placeholder: 'Hi {{first_name}}, your appointment is scheduled...',
-                  rows: 10,
-                  className: 'form-input',
-                  style: { resize: 'vertical', flex: 1, lineHeight: '1.5' }
+                  rows: 12,
+                  style: { ...inputStyle, resize: 'vertical', lineHeight: '1.5' }
                 }),
 
-                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '8px' }},
-                  h('span', { style: { fontSize: '11px', color: 'var(--text-muted)' }}, charCount + ' chars | Use {{variable}} for personalization'),
+                h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginTop: '10px' }},
+                  h('span', { style: { fontSize: '12px', color: '#888' }}, messageTemplate.length + ' chars | Use {{variable}} for personalization'),
                   h('select', {
                     value: platform,
                     onChange: (e) => setPlatform(e.target.value),
-                    className: 'form-input',
-                    style: { width: '120px', fontSize: '12px', padding: '4px 8px' }
+                    style: { ...inputStyle, width: '120px', padding: '6px 10px', fontSize: '13px' }
                   },
                     h('option', { value: 'imessage' }, 'iMessage'),
                     h('option', { value: 'sms' }, 'SMS')
                   )
                 ),
 
-                // Send button
                 h('button', {
-                  className: 'btn-primary',
-                  onClick: mode === 'contacts' ? () => window.handleSendBlast() : handleManualSend,
-                  disabled: sending || (mode === 'contacts' ? (!messageTemplate || selectedContacts.length === 0) : (!manualMessage || parsedNumbers.length === 0)),
-                  style: {
-                    marginTop: '12px',
-                    padding: '12px',
-                    fontSize: '14px',
-                    width: '100%'
-                  }
-                }, sending ? 'Sending...' : (mode === 'contacts'
-                  ? 'Send to ' + selectedContacts.length + (selectedContacts.length === 1 ? ' person' : ' people')
-                  : 'Send to ' + parsedNumbers.length + (parsedNumbers.length === 1 ? ' number' : ' numbers'))
-                )
+                  onClick: () => window.handleSendBlast(),
+                  disabled: sending || !messageTemplate || selectedContacts.length === 0,
+                  style: { ...blueBtn, width: '100%', marginTop: '16px', padding: '14px', fontSize: '15px', opacity: (sending || !messageTemplate || selectedContacts.length === 0) ? 0.5 : 1 }
+                }, sending ? 'Sending...' : 'Send to ' + selectedContacts.length + (selectedContacts.length === 1 ? ' person' : ' people'))
               )
             )
           );
@@ -2055,7 +1712,7 @@
 
         // ======== CAMPAIGNS VIEW ========
         function CampaignsView(props) {
-          const { campaigns, setCampaigns, contacts, templates, showCampaignModal, setShowCampaignModal } = props;
+          const { campaigns, setCampaigns, contacts, templates, showCampaignModal, setShowCampaignModal, blueBtn, secondaryBtn, inputStyle, labelStyle } = props;
           const [showNewCampaign, setShowNewCampaign] = React.useState(false);
           const [campaignForm, setCampaignForm] = React.useState({
             name: '',
@@ -2068,7 +1725,6 @@
             status: 'draft'
           });
 
-          // Sync with parent modal state
           React.useEffect(() => {
             if (showCampaignModal) setShowNewCampaign(true);
           }, [showCampaignModal]);
@@ -2101,42 +1757,48 @@
                 setCampaigns([...campaigns, data[0]]);
                 setShowNewCampaign(false);
                 setCampaignForm({ name: '', message: '', segment: 'all', schedule: 'now', scheduleDate: '', scheduleTime: '', frequency: 'once', status: 'draft' });
-                showToast('Campaign created', 'success');
+                alert('Campaign created');
               }
             } catch (err) {
-              showToast('Error creating campaign: ' + err.message, 'error');
+              alert('Error creating campaign: ' + err.message);
               console.error('Error:', err);
             }
           };
 
           const handleLaunchCampaign = (campaign) => {
-            showToast('Launching campaign: ' + campaign.name, 'info');
+            alert('Launching campaign: ' + campaign.name);
           };
 
-          return h('div', null,
+          return h('div', { style: { animation: 'fadeIn 0.3s ease-out' }},
+            // New campaign button
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }},
+              h('div'),
+              h('button', {
+                onClick: () => setShowNewCampaign(!showNewCampaign),
+                style: blueBtn
+              }, showNewCampaign ? 'Cancel' : '+ New Campaign')
+            ),
+
             // New campaign form
-            showNewCampaign && h('div', { className: 'card', style: { padding: '20px', marginBottom: '16px' }},
-              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }},
-                h('h3', { style: { fontSize: '14px', fontWeight: '600' }}, 'Create Campaign'),
-                h('button', { onClick: () => setShowNewCampaign(false), style: { background: 'none', border: 'none', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: '18px' }}, '\u00D7')
-              ),
-              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginBottom: '12px' }},
-                h('div', { className: 'form-group', style: { marginBottom: 0 } },
-                  h('label', { className: 'form-label' }, 'Campaign Name'),
+            showNewCampaign && h('div', { className: 'glass-card', style: { padding: '24px', marginBottom: '20px' }},
+              h('h3', { style: { fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '20px' }}, 'Create Campaign'),
+              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '16px', marginBottom: '16px' }},
+                h('div', null,
+                  h('label', { style: labelStyle }, 'Campaign Name'),
                   h('input', {
                     type: 'text',
                     value: campaignForm.name,
                     onChange: (e) => setCampaignForm({...campaignForm, name: e.target.value}),
                     placeholder: 'Summer Sale 2024',
-                    className: 'form-input'
+                    style: inputStyle
                   })
                 ),
-                h('div', { className: 'form-group', style: { marginBottom: 0 } },
-                  h('label', { className: 'form-label' }, 'Target Segment'),
+                h('div', null,
+                  h('label', { style: labelStyle }, 'Target Segment'),
                   h('select', {
                     value: campaignForm.segment,
                     onChange: (e) => setCampaignForm({...campaignForm, segment: e.target.value}),
-                    className: 'form-input'
+                    style: inputStyle
                   },
                     h('option', { value: 'all' }, 'All Contacts'),
                     h('option', { value: 'active' }, 'Active Customers'),
@@ -2144,77 +1806,76 @@
                   )
                 )
               ),
-              h('div', { className: 'form-group' },
-                h('label', { className: 'form-label' }, 'Message'),
+              h('div', { style: { marginBottom: '16px' }},
+                h('label', { style: labelStyle }, 'Message'),
                 h('textarea', {
                   value: campaignForm.message,
                   onChange: (e) => setCampaignForm({...campaignForm, message: e.target.value}),
                   placeholder: 'Your campaign message...',
-                  rows: 3,
-                  className: 'form-input',
-                  style: { resize: 'vertical' }
+                  rows: 4,
+                  style: { ...inputStyle, resize: 'vertical' }
                 })
               ),
-              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '12px', marginBottom: '16px' }},
+              h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: '16px', marginBottom: '20px' }},
                 h('div', null,
-                  h('label', { className: 'form-label' }, 'Schedule'),
+                  h('label', { style: labelStyle }, 'Schedule'),
                   h('select', {
                     value: campaignForm.schedule,
                     onChange: (e) => setCampaignForm({...campaignForm, schedule: e.target.value}),
-                    className: 'form-input'
+                    style: inputStyle
                   },
                     h('option', { value: 'now' }, 'Send Now'),
                     h('option', { value: 'scheduled' }, 'Schedule')
                   )
                 ),
                 campaignForm.schedule === 'scheduled' && h('div', null,
-                  h('label', { className: 'form-label' }, 'Date'),
-                  h('input', { type: 'date', value: campaignForm.scheduleDate, onChange: (e) => setCampaignForm({...campaignForm, scheduleDate: e.target.value}), className: 'form-input' })
+                  h('label', { style: labelStyle }, 'Date'),
+                  h('input', { type: 'date', value: campaignForm.scheduleDate, onChange: (e) => setCampaignForm({...campaignForm, scheduleDate: e.target.value}), style: inputStyle })
                 ),
                 campaignForm.schedule === 'scheduled' && h('div', null,
-                  h('label', { className: 'form-label' }, 'Time'),
-                  h('input', { type: 'time', value: campaignForm.scheduleTime, onChange: (e) => setCampaignForm({...campaignForm, scheduleTime: e.target.value}), className: 'form-input' })
+                  h('label', { style: labelStyle }, 'Time'),
+                  h('input', { type: 'time', value: campaignForm.scheduleTime, onChange: (e) => setCampaignForm({...campaignForm, scheduleTime: e.target.value}), style: inputStyle })
                 )
               ),
               h('button', {
-                className: 'btn-primary',
                 onClick: handleCreateCampaign,
                 disabled: !campaignForm.name || !campaignForm.message,
-                style: { width: '100%', padding: '10px' }
+                style: { ...blueBtn, width: '100%', padding: '14px', opacity: (!campaignForm.name || !campaignForm.message) ? 0.5 : 1 }
               }, 'Create Campaign')
             ),
 
-            // Campaigns table
-            h('div', { className: 'card', style: { overflow: 'hidden' }},
+            // Campaigns list
+            h('div', { className: 'glass-card', style: { overflow: 'hidden' }},
               campaigns.length === 0
-                ? h('div', { style: { textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }},
-                    h('p', { style: { fontSize: '14px', marginBottom: '4px' }}, 'No campaigns yet'),
-                    h('p', { style: { fontSize: '12px' }}, 'Create your first automated campaign')
+                ? h('div', { style: { textAlign: 'center', padding: '48px', color: '#888' }},
+                    h('p', { style: { fontSize: '16px', marginBottom: '8px' }}, 'No campaigns yet'),
+                    h('p', { style: { fontSize: '13px' }}, 'Create your first automated campaign')
                   )
-                : h('table', { className: 'data-table' },
+                : h('table', { style: { width: '100%', borderCollapse: 'collapse' }},
                     h('thead', null,
-                      h('tr', null,
-                        h('th', null, 'Name'),
-                        h('th', null, 'Status'),
-                        h('th', null, 'Recipients'),
-                        h('th', null, 'Schedule'),
-                        h('th', null, 'Created'),
-                        h('th', null, 'Actions')
+                      h('tr', { style: { borderBottom: '1px solid rgba(0,0,0,0.06)' }},
+                        h('th', { style: { textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Name'),
+                        h('th', { style: { textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Status'),
+                        h('th', { style: { textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Recipients'),
+                        h('th', { style: { textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Schedule'),
+                        h('th', { style: { textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Created'),
+                        h('th', { style: { textAlign: 'left', padding: '14px 16px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Actions')
                       )
                     ),
                     h('tbody', null,
                       campaigns.map(campaign =>
-                        h('tr', { key: campaign.id },
-                          h('td', { style: { fontWeight: '500' }}, campaign.name),
-                          h('td', null, h('span', { className: 'badge ' + (campaign.status === 'active' ? 'badge-green' : campaign.status === 'draft' ? 'badge-gray' : 'badge-yellow') }, campaign.status || 'draft')),
-                          h('td', null, campaign.total_recipients),
-                          h('td', null, campaign.schedule === 'now' ? 'Immediate' : (campaign.schedule_date || '--')),
-                          h('td', null, new Date(campaign.created_at).toLocaleDateString()),
-                          h('td', null,
+                        h('tr', { key: campaign.id, style: { borderBottom: '1px solid rgba(0,0,0,0.04)' }},
+                          h('td', { style: { padding: '12px 16px', fontSize: '14px', fontWeight: '500' }}, campaign.name),
+                          h('td', { style: { padding: '12px 16px' }},
+                            h('span', { style: { fontSize: '12px', padding: '3px 8px', borderRadius: '6px', background: campaign.status === 'active' ? 'rgba(40,167,69,0.1)' : 'rgba(0,0,0,0.04)', color: campaign.status === 'active' ? '#28a745' : '#888', fontWeight: '600' }}, campaign.status || 'draft')
+                          ),
+                          h('td', { style: { padding: '12px 16px', fontSize: '14px' }}, campaign.total_recipients),
+                          h('td', { style: { padding: '12px 16px', fontSize: '14px' }}, campaign.schedule === 'now' ? 'Immediate' : (campaign.schedule_date || '--')),
+                          h('td', { style: { padding: '12px 16px', fontSize: '14px', color: '#888' }}, new Date(campaign.created_at).toLocaleDateString()),
+                          h('td', { style: { padding: '12px 16px' }},
                             h('button', {
-                              className: 'btn-success',
-                              style: { padding: '4px 10px', fontSize: '11px' },
-                              onClick: () => handleLaunchCampaign(campaign)
+                              onClick: () => handleLaunchCampaign(campaign),
+                              style: { ...blueBtn, padding: '6px 14px', fontSize: '12px' }
                             }, 'Launch')
                           )
                         )
@@ -2227,7 +1888,7 @@
 
         // ======== TEMPLATES VIEW ========
         function TemplatesView(props) {
-          const { templates, setTemplates } = props;
+          const { templates, setTemplates, blueBtn, secondaryBtn, inputStyle, labelStyle } = props;
           const [showNewTemplate, setShowNewTemplate] = React.useState(false);
           const [templateForm, setTemplateForm] = React.useState({ name: '', message: '', category: 'general' });
 
@@ -2249,49 +1910,49 @@
                 setTemplates([...templates, data[0]]);
                 setShowNewTemplate(false);
                 setTemplateForm({ name: '', message: '', category: 'general' });
-                showToast('Template saved', 'success');
+                alert('Template saved');
               }
             } catch (err) {
-              showToast('Error saving template: ' + err.message, 'error');
+              alert('Error saving template: ' + err.message);
               console.error('Error:', err);
             }
           };
 
           const handleUseTemplate = (template) => {
             navigator.clipboard.writeText(template.message);
-            showToast('Template copied to clipboard', 'success');
+            alert('Template copied to clipboard');
           };
 
-          return h('div', null,
+          return h('div', { style: { animation: 'fadeIn 0.3s ease-out' }},
             // Header
-            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }},
-              h('p', { style: { fontSize: '13px', color: 'var(--text-secondary)' }}, 'Save and reuse your best messages'),
+            h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '20px' }},
+              h('p', { style: { fontSize: '14px', color: '#888' }}, 'Save and reuse your best messages'),
               h('button', {
-                className: 'btn-primary',
-                onClick: () => setShowNewTemplate(!showNewTemplate)
+                onClick: () => setShowNewTemplate(!showNewTemplate),
+                style: blueBtn
               }, showNewTemplate ? 'Cancel' : '+ New Template')
             ),
 
             // New template form
-            showNewTemplate && h('div', { className: 'card', style: { padding: '20px', marginBottom: '16px' }},
-              h('h3', { style: { fontSize: '14px', fontWeight: '600', marginBottom: '16px' }}, 'Create Template'),
-              h('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '12px', marginBottom: '12px' }},
+            showNewTemplate && h('div', { className: 'glass-card', style: { padding: '24px', marginBottom: '20px' }},
+              h('h3', { style: { fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '20px' }}, 'Create Template'),
+              h('div', { style: { display: 'grid', gridTemplateColumns: '2fr 1fr', gap: '16px', marginBottom: '16px' }},
                 h('div', null,
-                  h('label', { className: 'form-label' }, 'Template Name'),
+                  h('label', { style: labelStyle }, 'Template Name'),
                   h('input', {
                     type: 'text',
                     value: templateForm.name,
                     onChange: (e) => setTemplateForm({...templateForm, name: e.target.value}),
                     placeholder: 'Welcome Message',
-                    className: 'form-input'
+                    style: inputStyle
                   })
                 ),
                 h('div', null,
-                  h('label', { className: 'form-label' }, 'Category'),
+                  h('label', { style: labelStyle }, 'Category'),
                   h('select', {
                     value: templateForm.category,
                     onChange: (e) => setTemplateForm({...templateForm, category: e.target.value}),
-                    className: 'form-input'
+                    style: inputStyle
                   },
                     h('option', { value: 'general' }, 'General'),
                     h('option', { value: 'welcome' }, 'Welcome'),
@@ -2300,47 +1961,44 @@
                   )
                 )
               ),
-              h('div', { className: 'form-group' },
-                h('label', { className: 'form-label' }, 'Message'),
+              h('div', { style: { marginBottom: '16px' }},
+                h('label', { style: labelStyle }, 'Message'),
                 h('textarea', {
                   value: templateForm.message,
                   onChange: (e) => setTemplateForm({...templateForm, message: e.target.value}),
                   placeholder: 'Hi {{first_name}}, welcome to...',
-                  rows: 4,
-                  className: 'form-input',
-                  style: { resize: 'vertical' }
+                  rows: 5,
+                  style: { ...inputStyle, resize: 'vertical' }
                 }),
-                h('p', { style: { marginTop: '4px', fontSize: '11px', color: 'var(--text-muted)' }}, 'Use {{variable}} for personalization')
+                h('p', { style: { marginTop: '6px', fontSize: '12px', color: '#aaa' }}, 'Use {{variable}} for personalization')
               ),
               h('button', {
-                className: 'btn-primary',
                 onClick: handleSaveTemplate,
                 disabled: !templateForm.name || !templateForm.message,
-                style: { width: '100%', padding: '10px' }
+                style: { ...blueBtn, width: '100%', padding: '14px', opacity: (!templateForm.name || !templateForm.message) ? 0.5 : 1 }
               }, 'Save Template')
             ),
 
-            // Template cards grid
-            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(280px, 1fr))', gap: '12px' }},
+            // Template cards
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(320px, 1fr))', gap: '16px' }},
               templates.length === 0
-                ? h('div', { className: 'card', style: { gridColumn: '1 / -1', textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }},
-                    h('p', { style: { fontSize: '14px', marginBottom: '4px' }}, 'No templates yet'),
-                    h('p', { style: { fontSize: '12px' }}, 'Create templates to speed up your workflow')
+                ? h('div', { className: 'glass-card', style: { gridColumn: '1 / -1', textAlign: 'center', padding: '48px', color: '#888' }},
+                    h('p', { style: { fontSize: '16px', marginBottom: '8px' }}, 'No templates yet'),
+                    h('p', { style: { fontSize: '13px' }}, 'Create templates to speed up your workflow')
                   )
                 : templates.map(template => h('div', {
                     key: template.id,
-                    className: 'card',
-                    style: { padding: '16px' }
+                    className: 'glass-card',
+                    style: { padding: '20px' }
                   },
-                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '8px' }},
-                      h('h3', { style: { fontSize: '14px', fontWeight: '600' }}, template.name),
-                      h('span', { className: 'badge badge-blue' }, template.category)
+                    h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'start', marginBottom: '10px' }},
+                      h('h3', { style: { fontSize: '16px', fontWeight: '600', color: '#333' }}, template.name),
+                      h('span', { style: { fontSize: '11px', padding: '3px 8px', borderRadius: '6px', background: 'rgba(0, 122, 255, 0.1)', color: '#007AFF', fontWeight: '600' }}, template.category)
                     ),
-                    h('p', { style: { fontSize: '12px', color: 'var(--text-secondary)', lineHeight: '1.5', marginBottom: '12px' }}, template.message.substring(0, 120) + (template.message.length > 120 ? '...' : '')),
+                    h('p', { style: { fontSize: '13px', color: '#666', lineHeight: '1.5', marginBottom: '16px' }}, template.message.substring(0, 120) + (template.message.length > 120 ? '...' : '')),
                     h('button', {
-                      className: 'btn-secondary',
-                      style: { width: '100%', fontSize: '12px' },
-                      onClick: () => handleUseTemplate(template)
+                      onClick: () => handleUseTemplate(template),
+                      style: { ...secondaryBtn, width: '100%', fontSize: '13px' }
                     }, 'Copy Template')
                   ))
             )
@@ -2349,7 +2007,7 @@
 
         // ======== ACTIVITY / DELIVERY VIEW ========
         function DeliveryView(props) {
-          const { batches, stats } = props;
+          const { batches, stats, blueBtn, secondaryBtn } = props;
           const [expandedBatch, setExpandedBatch] = React.useState(null);
           const [unsentNumbers, setUnsentNumbers] = React.useState(null);
           const [loading, setLoading] = React.useState(false);
@@ -2382,7 +2040,7 @@
               });
               setExpandedBatch(batchId);
             } catch (err) {
-              showToast('Error fetching messages: ' + err.message, 'error');
+              alert('Error fetching messages: ' + err.message);
             } finally {
               setLoading(false);
             }
@@ -2390,101 +2048,103 @@
 
           const copyToClipboard = (text) => {
             navigator.clipboard.writeText(text).then(() => {
-              showToast('Copied to clipboard. Paste into Compose tab.', 'success');
+              alert('Copied to clipboard. Paste into Quick Send tab.');
             }).catch(() => {
-              showToast('Please manually select and copy the numbers', 'warning');
+              alert('Please manually select and copy the numbers');
             });
           };
 
-          return h('div', null,
-            // Stat cards
-            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(5, 1fr)', gap: '12px', marginBottom: '20px' }},
+          return h('div', { style: { animation: 'fadeIn 0.3s ease-out' }},
+            // Stat cards - 4 stat breakdown
+            h('div', { style: { display: 'grid', gridTemplateColumns: 'repeat(4, 1fr)', gap: '16px', marginBottom: '24px' }},
               [
-                { label: 'Total Batches', value: stats.totalBatches, color: 'var(--text-primary)' },
-                { label: 'Completed', value: stats.completed, color: 'var(--success)' },
-                { label: 'Sending', value: stats.sending, color: 'var(--warning)' },
-                { label: 'Failed', value: stats.failed, color: 'var(--danger)' },
-                { label: 'Cancelled', value: stats.cancelled, color: 'var(--text-secondary)' }
-              ].map((stat, i) => h('div', { key: i, className: 'kpi-card', style: { padding: '14px', textAlign: 'center' }},
-                h('div', { style: { fontSize: '22px', fontWeight: '700', color: stat.color, marginBottom: '2px' }}, stat.value),
-                h('div', { style: { fontSize: '11px', color: 'var(--text-secondary)' }}, stat.label)
+                { label: 'Sent', value: stats.completed, color: '#28a745', bg: 'rgba(40, 167, 69, 0.08)' },
+                { label: 'Sending', value: stats.sending, color: '#007AFF', bg: 'rgba(0, 122, 255, 0.08)' },
+                { label: 'Queued', value: stats.totalBatches - stats.completed - stats.sending - stats.failed - stats.cancelled, color: '#f0ad4e', bg: 'rgba(240, 173, 78, 0.08)' },
+                { label: 'Failed', value: stats.failed, color: '#dc3545', bg: 'rgba(220, 53, 69, 0.08)' }
+              ].map((stat, i) => h('div', {
+                key: i,
+                className: 'glass-card',
+                style: { padding: '20px', textAlign: 'center', background: stat.bg }
+              },
+                h('div', { style: { fontSize: '28px', fontWeight: '700', color: stat.color, marginBottom: '4px' }}, stat.value),
+                h('div', { style: { fontSize: '13px', color: '#888', fontWeight: '500' }}, stat.label)
               ))
             ),
 
-            // Batch table
-            h('div', { className: 'card', style: { overflow: 'hidden' }},
-              h('div', { style: { padding: '16px 16px 0' }},
-                h('h3', { style: { fontSize: '14px', fontWeight: '600', marginBottom: '12px' }}, 'Recent Activity')
+            // Batch list
+            h('div', { className: 'glass-card', style: { overflow: 'hidden' }},
+              h('div', { style: { padding: '20px 20px 0' }},
+                h('h3', { style: { fontSize: '18px', fontWeight: '600', color: '#333', marginBottom: '16px' }}, 'Message Batches')
               ),
               batches.length === 0
-                ? h('div', { style: { textAlign: 'center', padding: '48px 24px', color: 'var(--text-muted)' }},
-                    h('p', { style: { fontSize: '14px', marginBottom: '4px' }}, 'No activity yet'),
-                    h('p', { style: { fontSize: '12px' }}, 'Your message batches will appear here')
+                ? h('div', { style: { textAlign: 'center', padding: '48px', color: '#888' }},
+                    h('p', { style: { fontSize: '16px', marginBottom: '8px' }}, 'No activity yet'),
+                    h('p', { style: { fontSize: '13px' }}, 'Your message batches will appear here')
                   )
-                : h('table', { className: 'data-table' },
+                : h('table', { style: { width: '100%', borderCollapse: 'collapse' }},
                     h('thead', null,
-                      h('tr', null,
-                        h('th', null, 'Date'),
-                        h('th', null, 'Messages'),
-                        h('th', null, 'Platform'),
-                        h('th', null, 'Status'),
-                        h('th', null, 'Actions')
+                      h('tr', { style: { borderBottom: '1px solid rgba(0,0,0,0.06)' }},
+                        h('th', { style: { textAlign: 'left', padding: '12px 20px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Date'),
+                        h('th', { style: { textAlign: 'left', padding: '12px 20px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Messages'),
+                        h('th', { style: { textAlign: 'left', padding: '12px 20px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Platform'),
+                        h('th', { style: { textAlign: 'left', padding: '12px 20px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Status'),
+                        h('th', { style: { textAlign: 'left', padding: '12px 20px', fontSize: '12px', fontWeight: '600', color: '#888', textTransform: 'uppercase', letterSpacing: '0.05em' }}, 'Actions')
                       )
                     ),
                     h('tbody', null,
                       batches.map(batch => h(React.Fragment, { key: batch.id },
-                        h('tr', null,
-                          h('td', null, new Date(batch.created_at).toLocaleString()),
-                          h('td', null, batch.total_messages),
-                          h('td', null, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
-                          h('td', null, h('span', { className: 'badge ' + (batch.status === 'completed' ? 'badge-green' : batch.status === 'sending' ? 'badge-yellow' : batch.status === 'failed' ? 'badge-red' : 'badge-gray') }, batch.status.charAt(0).toUpperCase() + batch.status.slice(1))),
-                          h('td', null,
+                        h('tr', { style: { borderBottom: '1px solid rgba(0,0,0,0.04)' }},
+                          h('td', { style: { padding: '12px 20px', fontSize: '14px' }}, new Date(batch.created_at).toLocaleString()),
+                          h('td', { style: { padding: '12px 20px', fontSize: '14px' }}, batch.total_messages),
+                          h('td', { style: { padding: '12px 20px', fontSize: '14px' }}, batch.platform === 'imessage' ? 'iMessage' : 'SMS'),
+                          h('td', { style: { padding: '12px 20px' }},
+                            h('span', { style: { fontSize: '12px', padding: '3px 8px', borderRadius: '6px', fontWeight: '600', background: batch.status === 'completed' ? 'rgba(40,167,69,0.1)' : batch.status === 'sending' ? 'rgba(0,122,255,0.1)' : batch.status === 'failed' ? 'rgba(220,53,69,0.1)' : 'rgba(0,0,0,0.04)', color: batch.status === 'completed' ? '#28a745' : batch.status === 'sending' ? '#007AFF' : batch.status === 'failed' ? '#dc3545' : '#888' }}, batch.status.charAt(0).toUpperCase() + batch.status.slice(1))
+                          ),
+                          h('td', { style: { padding: '12px 20px' }},
                             h('button', {
-                              className: 'btn-secondary',
-                              style: { padding: '4px 10px', fontSize: '11px' },
                               onClick: () => expandedBatch === batch.id ? setExpandedBatch(null) : showUnsentNumbers(batch.id),
-                              disabled: loading
-                            }, expandedBatch === batch.id ? 'Close' : 'View Details')
+                              disabled: loading,
+                              style: { ...secondaryBtn, padding: '6px 14px', fontSize: '12px' }
+                            }, expandedBatch === batch.id ? 'Close' : 'View Numbers')
                           )
                         ),
 
-                        // Expanded details row
+                        // Expanded details
                         expandedBatch === batch.id && unsentNumbers && h('tr', null,
-                          h('td', { colSpan: 5, style: { padding: '16px', background: '#f9fafb' }},
-                            // Status breakdown
-                            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '8px', marginBottom: '12px' }},
-                              h('div', { style: { padding: '10px', background: 'var(--success-bg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }},
-                                h('div', { style: { fontSize: '20px', fontWeight: '700', color: 'var(--success)' }}, unsentNumbers.sent.length),
-                                h('div', { style: { fontSize: '11px', color: 'var(--success)' }}, 'Sent')
+                          h('td', { colSpan: 5, style: { padding: '20px', background: 'rgba(0, 0, 0, 0.02)' }},
+                            // 4-stat breakdown
+                            h('div', { style: { display: 'grid', gridTemplateColumns: '1fr 1fr 1fr 1fr', gap: '10px', marginBottom: '16px' }},
+                              h('div', { style: { padding: '12px', background: 'rgba(40, 167, 69, 0.08)', borderRadius: '10px', textAlign: 'center' }},
+                                h('div', { style: { fontSize: '22px', fontWeight: '700', color: '#28a745' }}, unsentNumbers.sent.length),
+                                h('div', { style: { fontSize: '12px', color: '#28a745' }}, 'Sent')
                               ),
-                              h('div', { style: { padding: '10px', background: 'var(--info-bg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }},
-                                h('div', { style: { fontSize: '20px', fontWeight: '700', color: 'var(--info)' }}, (unsentNumbers.sending || []).length),
-                                h('div', { style: { fontSize: '11px', color: 'var(--info)' }}, 'Sending')
+                              h('div', { style: { padding: '12px', background: 'rgba(0, 122, 255, 0.08)', borderRadius: '10px', textAlign: 'center' }},
+                                h('div', { style: { fontSize: '22px', fontWeight: '700', color: '#007AFF' }}, (unsentNumbers.sending || []).length),
+                                h('div', { style: { fontSize: '12px', color: '#007AFF' }}, 'Sending')
                               ),
-                              h('div', { style: { padding: '10px', background: 'var(--warning-bg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }},
-                                h('div', { style: { fontSize: '20px', fontWeight: '700', color: 'var(--warning)' }}, (unsentNumbers.queued || []).length),
-                                h('div', { style: { fontSize: '11px', color: 'var(--warning)' }}, 'Queued')
+                              h('div', { style: { padding: '12px', background: 'rgba(240, 173, 78, 0.08)', borderRadius: '10px', textAlign: 'center' }},
+                                h('div', { style: { fontSize: '22px', fontWeight: '700', color: '#f0ad4e' }}, (unsentNumbers.queued || []).length),
+                                h('div', { style: { fontSize: '12px', color: '#f0ad4e' }}, 'Queued')
                               ),
-                              h('div', { style: { padding: '10px', background: 'var(--danger-bg)', borderRadius: 'var(--radius-md)', textAlign: 'center' }},
-                                h('div', { style: { fontSize: '20px', fontWeight: '700', color: 'var(--danger)' }}, (unsentNumbers.failed || []).length),
-                                h('div', { style: { fontSize: '11px', color: 'var(--danger)' }}, 'Failed')
+                              h('div', { style: { padding: '12px', background: 'rgba(220, 53, 69, 0.08)', borderRadius: '10px', textAlign: 'center' }},
+                                h('div', { style: { fontSize: '22px', fontWeight: '700', color: '#dc3545' }}, (unsentNumbers.failed || []).length),
+                                h('div', { style: { fontSize: '12px', color: '#dc3545' }}, 'Failed')
                               )
                             ),
 
                             unsentNumbers.unsent.length > 0 && h('div', null,
-                              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '8px' }},
-                                h('span', { style: { fontSize: '12px', fontWeight: '600' }}, 'Remaining Numbers (' + unsentNumbers.unsent.length + ')'),
-                                h('div', { style: { display: 'flex', gap: '6px' }},
+                              h('div', { style: { display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '10px' }},
+                                h('span', { style: { fontSize: '14px', fontWeight: '600', color: '#333' }}, 'Remaining Numbers (' + unsentNumbers.unsent.length + ')'),
+                                h('div', { style: { display: 'flex', gap: '8px' }},
                                   h('button', {
-                                    className: 'btn-success',
-                                    style: { padding: '4px 10px', fontSize: '11px' },
-                                    onClick: () => copyToClipboard(unsentNumbers.unsent.join('\n'))
+                                    onClick: () => copyToClipboard(unsentNumbers.unsent.join('\n')),
+                                    style: { ...blueBtn, padding: '6px 14px', fontSize: '12px' }
                                   }, 'Copy All'),
                                   h('button', {
-                                    className: 'btn-secondary',
-                                    style: { padding: '4px 10px', fontSize: '11px', color: 'var(--warning)' },
-                                    onClick: () => window.markBatchFailedContacts(unsentNumbers.batchId)
-                                  }, 'Mark Undeliverable')
+                                    onClick: () => window.markBatchFailedContacts(unsentNumbers.batchId),
+                                    style: { ...secondaryBtn, padding: '6px 14px', fontSize: '12px', color: '#f0ad4e' }
+                                  }, 'Mark as Undeliverable')
                                 )
                               ),
                               h('textarea', {
@@ -2493,21 +2153,21 @@
                                 style: {
                                   width: '100%',
                                   height: '140px',
-                                  padding: '8px',
-                                  background: '#fff',
-                                  border: '1px solid var(--border-color)',
-                                  borderRadius: 'var(--radius-md)',
-                                  fontSize: '12px',
+                                  padding: '10px',
+                                  background: 'rgba(255, 255, 255, 0.8)',
+                                  border: '1px solid rgba(0, 0, 0, 0.1)',
+                                  borderRadius: '10px',
+                                  fontSize: '13px',
                                   fontFamily: 'monospace',
                                   resize: 'vertical'
                                 }
                               }),
-                              h('p', { style: { marginTop: '6px', fontSize: '11px', color: 'var(--text-muted)' }},
-                                'Tip: Click "Copy All" then paste into Compose tab (Manual Entry mode)')
+                              h('p', { style: { marginTop: '8px', fontSize: '12px', color: '#888' }},
+                                'Tip: Click "Copy All" then paste into Quick Send tab')
                             ),
 
                             unsentNumbers.unsent.length === 0 && h('div', {
-                              style: { padding: '16px', textAlign: 'center', color: 'var(--success)', fontSize: '13px', fontWeight: '600' }
+                              style: { padding: '20px', textAlign: 'center', color: '#28a745', fontSize: '15px', fontWeight: '600' }
                             }, 'All messages sent successfully!')
                           )
                         )
