@@ -552,6 +552,17 @@
             }
           };
 
+          // ======== INTERNATIONAL NUMBER DETECTION ========
+          const isUSCanadaNumber = (phone) => {
+            const digits = (phone || '').replace(/[^\d]/g, '');
+            // US/Canada: starts with 1, total 11 digits, or 10 digits (no country code)
+            if (digits.length === 10) return true;
+            if (digits.length === 11 && digits.startsWith('1')) return true;
+            const cleaned = (phone || '').replace(/[^\d+]/g, '');
+            if (cleaned.startsWith('+1') && digits.length === 11) return true;
+            return false;
+          };
+
           // ======== SEND BLAST ========
           const handleSendBlast = async (customMessage = null, customContacts = null) => {
             console.log('handleSendBlast called with:', { customMessage, customContacts });
@@ -566,6 +577,34 @@
               return;
             }
 
+            // Separate US/Canada numbers from international
+            const usContacts = [];
+            const internationalContacts = [];
+            blastContacts.forEach(contact => {
+              const normalized = normalizePhoneNumber(contact.phone);
+              if (isUSCanadaNumber(normalized)) {
+                usContacts.push(contact);
+              } else {
+                internationalContacts.push(contact);
+              }
+            });
+
+            // Auto-flag international contacts as undeliverable
+            if (internationalContacts.length > 0) {
+              for (const contact of internationalContacts) {
+                if (contact.id && !contact.id.startsWith('temp_')) {
+                  await markContactDeliveryStatus(contact.id, 'undeliverable');
+                }
+              }
+              alert(internationalContacts.length + ' international number(s) flagged as undeliverable (iMessage Shortcuts cannot send to international numbers with +). ' + usContacts.length + ' US/Canada numbers will be sent.');
+            }
+
+            if (usContacts.length === 0) {
+              alert('No US/Canada numbers to send to. International numbers have been flagged.');
+              setSending(false);
+              return;
+            }
+
             setSending(true);
             try {
               const { data: batch, error: batchError } = await supabaseClient
@@ -573,21 +612,31 @@
                 .insert({
                   platform: platform,
                   message_template: message,
-                  total_messages: blastContacts.length,
+                  total_messages: usContacts.length,
                   status: 'pending'
                 }).select().single();
 
               if (batchError) throw batchError;
 
-              const messages = blastContacts.map(contact => ({
+              const messages = usContacts.map(contact => ({
                 batch_id: batch.id,
                 contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
-                phone_number: 'PLUS' + normalizePhoneNumber(contact.phone).replace('+', ''),
+                phone_number: normalizePhoneNumber(contact.phone),
                 message: personalizeMessage(message, contact),
                 status: 'queued'
               }));
 
-              const { error: messagesError } = await supabaseClient.from('messages').insert(messages);
+              // Also insert international as 'skipped' for tracking
+              const skippedMessages = internationalContacts.map(contact => ({
+                batch_id: batch.id,
+                contact_id: contact.id && contact.id.startsWith('temp_') ? null : contact.id,
+                phone_number: normalizePhoneNumber(contact.phone),
+                message: personalizeMessage(message, contact),
+                status: 'failed'
+              }));
+
+              const allMessages = [...messages, ...skippedMessages];
+              const { error: messagesError } = await supabaseClient.from('messages').insert(allMessages);
               if (messagesError) throw messagesError;
 
               await supabaseClient.from('message_batches').update({ status: 'sending' }).eq('id', batch.id);
@@ -607,7 +656,7 @@
               setActiveTab('activity');
 
               setTimeout(() => {
-                alert('Batch created! Opening Shortcuts app...');
+                alert('Batch created with ' + usContacts.length + ' US/Canada numbers. ' + (internationalContacts.length > 0 ? internationalContacts.length + ' international numbers skipped.' : '') + ' Opening Shortcuts...');
               }, 500);
             } catch (err) {
               alert('Error: ' + err.message);
